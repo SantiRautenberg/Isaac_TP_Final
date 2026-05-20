@@ -17,11 +17,11 @@ class Jugador:  #la clase base de todo es jugardor
         if keys[pygame.K_d]:
             self.x += self.vel_movimiento
         if keys[pygame.K_w]:
-            self.y += self.vel_movimiento
-        if keys[pygame.K_s]:
             self.y -= self.vel_movimiento
+        if keys[pygame.K_s]:
+            self.y += self.vel_movimiento
         
         
     def Dibujo(self, pantalla):
         pygame.draw.rect(pantalla,(255,0,0),(self.x,self.y,30,30)) #esto es otro atributo de pygames que dibuja en pantalla por posiciones (variable,color,tamaño del jugador)
-    
+        
