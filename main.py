@@ -15,7 +15,10 @@ jugador = Jugador("Isaac",3,5,1,None,100,100,100)
 balas   =[]
 
 Ejecutando =  True
-
+#--------------Variables de disparo para generar delay-----------------------------
+delay_disparo = 500
+ultimo_disparo = 0
+#----------------------------------------------------------------------------------
 while Ejecutando:
     reloj.tick(60)
     
@@ -25,9 +28,24 @@ while Ejecutando:
     
     keys = pygame.key.get_pressed()
     jugador.Moverse(keys)
-    
-    if keys[pygame.K_RIGHT]:
-        balas.append(Bala(jugador.x,jugador.y,1,0))
+        
+    tiempo_actual = pygame.time.get_ticks()
+
+    if keys[pygame.K_RIGHT] and tiempo_actual - ultimo_disparo > delay_disparo:
+        balas.append(Bala(jugador.x, jugador.y, 1, 0))
+        ultimo_disparo = tiempo_actual
+
+    elif keys[pygame.K_LEFT] and tiempo_actual - ultimo_disparo > delay_disparo:
+        balas.append(Bala(jugador.x, jugador.y, -1, 0))
+        ultimo_disparo = tiempo_actual
+
+    elif keys[pygame.K_UP] and tiempo_actual - ultimo_disparo > delay_disparo:
+        balas.append(Bala(jugador.x, jugador.y, 0, -1))
+        ultimo_disparo = tiempo_actual
+
+    elif keys[pygame.K_DOWN] and tiempo_actual - ultimo_disparo > delay_disparo:
+        balas.append(Bala(jugador.x, jugador.y, 0, 1))
+        ultimo_disparo = tiempo_actual
     
     pantalla.fill((0,0,0)) 
     jugador.Dibujo(pantalla)
