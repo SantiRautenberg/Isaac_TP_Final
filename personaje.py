@@ -1,9 +1,12 @@
 #--------------librerias-----------------
 import pygame
+import os
 #----------------------------------------
+ANCHO=32
+ALTO =32
 
-class Jugador:  #la clase base de todo es jugardor
-    def __init__(self,nombre,vida,vel_movimiento,daño,proyectil,rango,x,y):  #le di los siguientes atributos a mi criterio, puede ser modificado si surge otra idea
+class Jugador:
+    def __init__(self,nombre,vida,vel_movimiento,daño,proyectil,rango,x,y):
         self.nombre         = nombre                            
         self.vida           = vida
         self.vel_movimiento = vel_movimiento
@@ -11,6 +14,16 @@ class Jugador:  #la clase base de todo es jugardor
         self.proyectil      = proyectil
         self.rango          = rango
         
+       
+        ruta = os.path.join(os.path.dirname(__file__), "isaac_base_sprite.png")
+        sprite_sheet = pygame.image.load(ruta).convert_alpha()
+
+
+        self.sprite = sprite_sheet.subsurface((32, 0, 32, 32))
+
+        self.sprite = sprite_sheet
+        self.sprite = pygame.transform.scale(self.sprite, (100, 100))
+
         self.x = x  
         self.y = y
         
@@ -26,24 +39,10 @@ class Jugador:  #la clase base de todo es jugardor
         
         
     def Dibujo(self, pantalla):
-        pygame.draw.rect(pantalla,(255,0,0),(self.x,self.y,30,30)) #esto es otro atributo de pygames que dibuja en pantalla por posiciones (variable,color,tamaño del jugador)
+        pantalla.blit(self.sprite, (self.x, self.y))
         
 
 
-class Bala:
-    def __init__(self,x,y,dire_x,dire_Y):
-        self.x      = x
-        self.y      = y
-        self.dire_x = dire_x
-        self.dire_Y = dire_Y
-        self.bala_vel=10
-
-    def Trayectoria(self):
-        self.x += self.dire_x * self.bala_vel
-        self.y += self.dire_Y * self.bala_vel
-        
-    def Dibujar(self,pantalla):
-         pygame.draw.circle(pantalla, (255,255,0), (self.x, self.y), 5)
 
 
         
