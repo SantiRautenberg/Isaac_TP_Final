@@ -68,13 +68,13 @@ while Ejecutando:
     
     
     
-    #-------------------muestreo_pantalla-------------------------------
+#-------------------muestreo_pantalla-------------------------------
     for bala in balas[:]:
         bala.Trayectoria()
         bala.Dibujar(pantalla)    
         # Eliminar balas que salen de la pantalla
-    if bala.x < 0 or bala.x > 800 or bala.y < 0 or bala.y > 600:
-        balas.remove(bala)
+        if bala.x < 0 or bala.x > 800 or bala.y < 0 or bala.y > 600:
+            balas.remove(bala)
         
     for enemigo in enemigos:
         enemigo.dibujar(pantalla)
