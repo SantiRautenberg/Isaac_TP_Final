@@ -1,6 +1,7 @@
 import pygame
 from personaje import Jugador
 from bala import Bala
+from enemigo import Enemigo
 
 
 pygame.init()
@@ -9,8 +10,17 @@ pygame.init()
 pantalla = pygame.display.set_mode((800, 600))
 reloj = pygame.time.Clock()
 
+#----------------sets_del_personaje------------------------
 jugador = Jugador("Isaac", 3, 5, 1, None, 100, 100, 100)
 balas = []
+#----------------------------------------------------------
+
+#-------------------sets_de_enemigos-----------------------
+enemigos = [
+    Enemigo(400, 300),
+    Enemigo(200, 150)
+]
+#----------------------------------------------------------
 
 Ejecutando = True
 #--------------Variables de disparo para generar delay-----------------------------
@@ -28,7 +38,12 @@ while Ejecutando:
     jugador.Moverse(keys)
         
     tiempo_actual = pygame.time.get_ticks()
+    
+    for enemigo in enemigos:
+        enemigo.seguir_jugador(jugador)
+        enemigo.colision_con_jugador(jugador)
 
+#=====================[sets_teclas_disparo]==========================================
     if keys[pygame.K_RIGHT] and tiempo_actual - ultimo_disparo > delay_disparo:
         balas.append(Bala(jugador.x + 50, jugador.y + 50, 1, 0))
         jugador.direccion_actual = "DERECHA" # Fuerza a mirar al lado del disparo
@@ -50,14 +65,23 @@ while Ejecutando:
     # LIMPIADOR DE LA PANTALLA
     pantalla.fill((45, 55, 32))
     
+    
+    
+    
+    #-------------------muestreo_pantalla-------------------------------
     for bala in balas[:]:
         bala.Trayectoria()
-        bala.Dibujar(pantalla)
+        bala.Dibujar(pantalla)    
         # Eliminar balas que salen de la pantalla
-        if bala.x < 0 or bala.x > 800 or bala.y < 0 or bala.y > 600:
-            balas.remove(bala)
-            
+    if bala.x < 0 or bala.x > 800 or bala.y < 0 or bala.y > 600:
+        balas.remove(bala)
+        
+    for enemigo in enemigos:
+        enemigo.dibujar(pantalla)
+                    
     jugador.Dibujo(pantalla)
     pygame.display.flip()
+    #-------------------------------------------------------------------  
+
         
 pygame.quit()
