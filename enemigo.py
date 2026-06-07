@@ -37,6 +37,3 @@ class Enemigo:
     def dibujar(self, pantalla):
         pygame.draw.circle(pantalla, (200, 50, 50), (int(self.x), int(self.y)), 15)
         pygame.draw.circle(pantalla, (120, 0, 0), (int(self.x), int(self.y)), 7)
-
-
-
