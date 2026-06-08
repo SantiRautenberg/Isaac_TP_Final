@@ -1,10 +1,10 @@
+from base import Base # Importa clase abstracta base
 import pygame
 import math
 
-class Enemigo:
+class Enemigo(Base):
     def __init__(self, x, y, velocidad=2, vida=3, daño=1):
-        self.x = x
-        self.y = y
+        super().__init__(x, y) # Delega a la clase base
         self.velocidad = velocidad 
         self.vida = vida
         self.daño = daño
@@ -38,5 +38,9 @@ class Enemigo:
         pygame.draw.circle(pantalla, (200, 50, 50), (int(self.x), int(self.y)), 15)
         pygame.draw.circle(pantalla, (120, 0, 0), (int(self.x), int(self.y)), 7)
 
-
-
+    def actualizar(self, pantalla, jugador):
+        self.seguir_jugador(jugador)
+        self.colision_con_jugador(jugador)
+        self.dibujar(pantalla)
+    
+    

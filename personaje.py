@@ -1,18 +1,19 @@
 # personaje.py
+from base import Base # Importa clase abstracta
 import pygame
 import os
 
 
-class Jugador:
+class Jugador(Base):
+    
     def __init__(self, nombre, vida, vel_movimiento, daño, proyectil, rango, x, y):
+        super().__init__(x, y)
         self.nombre = nombre
         self.vida = vida
         self.vel_movimiento = vel_movimiento
         self.daño = daño
         self.proyectil = proyectil
         self.rango = rango
-        self.x = x
-        self.y = y
 
         # Escalado uniforme para todos los sprites del personaje
         self.dimensiones = (75, 75)
@@ -51,7 +52,7 @@ class Jugador:
         # sprite por defecto (Sprite de mirar hacia abajo)
         self.sprite = self.sprites_direcciones[self.direccion_actual]
 
-    def ActualizarAnimacion(self):
+    def actualizarAnimacion(self):
         tiempo_actual = pygame.time.get_ticks()
 
         if self.esta_moviendose:
@@ -68,7 +69,7 @@ class Jugador:
             # Si se queda quieto, volvemos a la dirección estática hacia donde miraba
             self.sprite = self.sprites_direcciones[self.direccion_actual]
 
-    def Moverse(self, keys):
+    def moverse(self, keys):
         # Reiniciamos el estado a Falso en cada frame. Solo cambia a Verdadero si toca una tecla.
         self.esta_moviendose = False
 
@@ -89,8 +90,14 @@ class Jugador:
             self.y += self.vel_movimiento
             self.direccion_actual = "ABAJO"
             self.esta_moviendose = True
-        self.ActualizarAnimacion()
+        self.actualizarAnimacion()
         
-    def Dibujo(self, pantalla):
+    def dibujar(self, pantalla):
         # Renderiza el sprite para cada frame en la posición actual del jugador
         pantalla.blit(self.sprite, (self.x, self.y))
+
+    def actualizar(self,pantalla,keys):
+        self.moverse(keys)
+        self.dibujar(pantalla)
+
+    
