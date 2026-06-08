@@ -3,7 +3,6 @@ from personaje import Jugador
 from bala import Bala
 from enemigo import Enemigo
 
-
 pygame.init()
 #instancio la pantalla, el jugador y el clock
 
@@ -20,13 +19,19 @@ enemigos = [
     Enemigo(400, 300),
     Enemigo(200, 150)
 ]
+
+#------------------LISTA GENERAL---------------------------
+# Concateno las listas para poder iterar luego
+entidades = [jugador] + enemigos + balas
 #----------------------------------------------------------
 
 Ejecutando = True
+
 #--------------Variables de disparo para generar delay-----------------------------
 delay_disparo = 500
 ultimo_disparo = 0
 #----------------------------------------------------------------------------------
+
 while Ejecutando:
     reloj.tick(60)
     
@@ -35,53 +40,59 @@ while Ejecutando:
             Ejecutando = False
     
     keys = pygame.key.get_pressed()
-    jugador.Moverse(keys)
         
     tiempo_actual = pygame.time.get_ticks()
-    
-    for enemigo in enemigos:
-        enemigo.seguir_jugador(jugador)
-        enemigo.colision_con_jugador(jugador)
 
-#=====================[sets_teclas_disparo]==========================================
+    #=====================[sets_teclas_disparo]==========================================
     if keys[pygame.K_RIGHT] and tiempo_actual - ultimo_disparo > delay_disparo:
-        balas.append(Bala(jugador.x + 50, jugador.y + 50, 1, 0))
+        bala = Bala(jugador.x + 50, jugador.y + 50, 1, 0)
+        balas.append(bala)
+        entidades.append(bala)
         jugador.direccion_actual = "DERECHA" # Fuerza a mirar al lado del disparo
         ultimo_disparo = tiempo_actual
 
     elif keys[pygame.K_LEFT] and tiempo_actual - ultimo_disparo > delay_disparo:
-        balas.append(Bala(jugador.x + 50, jugador.y + 50, -1, 0))
+        bala = Bala(jugador.x + 50, jugador.y + 50, -1, 0)
+        balas.append(bala)
+        entidades.append(bala)
         jugador.direccion_actual = "IZQUIERDA"
         ultimo_disparo = tiempo_actual
 
     elif keys[pygame.K_UP] and tiempo_actual - ultimo_disparo > delay_disparo:
-        balas.append(Bala(jugador.x, jugador.y, 0, -1))
+        bala = Bala(jugador.x, jugador.y, 0, -1)
+        balas.append(bala)
+        entidades.append(bala)
         ultimo_disparo = tiempo_actual
 
     elif keys[pygame.K_DOWN] and tiempo_actual - ultimo_disparo > delay_disparo:
-        balas.append(Bala(jugador.x, jugador.y, 0, 1))
+        bala = Bala(jugador.x, jugador.y, 0, 1)
+        balas.append(bala)
+        entidades.append(bala)
         ultimo_disparo = tiempo_actual
         
+    #-------------------- DICCIONARIO ARGUMENTOS --------------------
+    # Para usar en actualizar
+    dic_args = {Jugador: [pantalla, keys],
+                Enemigo: [pantalla, jugador],
+                Bala: [pantalla]
+                }
+   
     # LIMPIADOR DE LA PANTALLA
     pantalla.fill((45, 55, 32))
     
-    
-    
-    
-#-------------------muestreo_pantalla-------------------------------
-    for bala in balas[:]:
-        bala.Trayectoria()
-        bala.Dibujar(pantalla)    
-        # Eliminar balas que salen de la pantalla
-        if bala.x < 0 or bala.x > 800 or bala.y < 0 or bala.y > 600:
-            balas.remove(bala)
-        
-    for enemigo in enemigos:
-        enemigo.dibujar(pantalla)
-                    
-    jugador.Dibujo(pantalla)
-    pygame.display.flip()
-    #-------------------------------------------------------------------  
+    #-------------------- ACTUALIZA LISTA GENERAL --------------------
+    for entidad in entidades[:]:
+        # Obtengo argumentos
+        args = dic_args[type(entidad)]
+        entidad.actualizar(*args)
 
-        
+        # Eliminar balas que salen de la pantalla
+        if isinstance(entidad,Bala):
+            if entidad.x < 0 or entidad.x > 800 or entidad.y < 0 or entidad.y > 600:
+                # Sincronizo ambas listas, mantengo balas para otras funciones
+                balas.remove(entidad)
+                entidades.remove(entidad)
+
+    pygame.display.flip()
+
 pygame.quit()
