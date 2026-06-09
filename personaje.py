@@ -97,7 +97,7 @@ class Jugador(Base):
         # Renderiza el sprite para cada frame en la posición actual del jugador
         pantalla.blit(self.sprite, (self.x, self.y))
 
-    def actualizar(self,pantalla,keys):
+    def actualizar(self, pantalla, keys):
         self.moverse(keys)
         self.dibujar(pantalla)
 
