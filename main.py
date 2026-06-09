@@ -113,13 +113,7 @@ while Ejecutando:
         manager.process_events(evento)
         
     manager.update(time_delta)
-
-    jugador.moverse(keys)
-
-    for enemigo in enemigos:
-        enemigo.seguir_jugador(jugador)
-        enemigo.colision_con_jugador(jugador)
-        
+    
 # =====================[sets_teclas_disparo]==========================================
     if keys[pygame.K_RIGHT] and tiempo_actual - ultimo_disparo > delay_disparo:
         bala = Bala(jugador.x + 50, jugador.y + 50, 1, 0)
@@ -162,10 +156,12 @@ while Ejecutando:
         args = dic_args[type(entidad)]
         entidad.actualizar(*args)
         entidad.dibujar(pantalla)
+        
+        # Eliminar balas que salen de pantalla
         if isinstance(entidad, Bala):
             if entidad.x < 0 or entidad.x > 800 or entidad.y < 0 or entidad.y > 600:
-                if entidad in balas:
-                    balas.remove(entidad)
+                # Sincronizo ambas listas, mantengo balas para otras funciones
+                balas.remove(entidad)
                 entidades.remove(entidad)
                 
     # Renderiza UI después de actualizar para que esté por encima de todo
