@@ -55,10 +55,12 @@ try:
 
         elif keys[pygame.K_UP] and tiempo_actual - ultimo_disparo > delay_disparo:
             entidades.append(Bala(jugador.x, jugador.y, 0, -1))
+            jugador.direccion_actual = "ARRIBA"
             ultimo_disparo = tiempo_actual
 
         elif keys[pygame.K_DOWN] and tiempo_actual - ultimo_disparo > delay_disparo:
             entidades.append(Bala(jugador.x, jugador.y, 0, 1))
+            jugador.direccion_actual = "ABAJO"
             ultimo_disparo = tiempo_actual
 
         #-------------------- DICCIONARIO ARGUMENTOS --------------------
