@@ -1,6 +1,7 @@
 import pygame
 import math
 
+
 class Enemigo:
     def __init__(self, x, y, velocidad=2, vida=3, daño=1):
         self.x = x

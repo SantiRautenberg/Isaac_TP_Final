@@ -1,52 +1,60 @@
 import pygame
+import pygame_gui
 from personaje import Jugador
 from bala import Bala
 from enemigo import Enemigo
 
+resolucion = (800, 600)  # Resolución de la pantalla
 
+# Inicializamos el juego y el gestor de interfaces
 pygame.init()
-#instancio la pantalla, el jugador y el clock
+pygame.display.set_caption("Isaac TP Final")
+manager = pygame_gui.UIManager((resolucion))
 
-pantalla = pygame.display.set_mode((800, 600))
+# instancio la pantalla, el jugador y el clock
+pantalla = pygame.display.set_mode((resolucion))
+background = pygame.Surface((resolucion))
+background.fill(pygame.Color("#FFFEFE"))
 reloj = pygame.time.Clock()
 
-#----------------sets_del_personaje------------------------
+Ejecutando = True
+
+# ----------------sets_del_personaje------------------------
 jugador = Jugador("Isaac", 3, 5, 1, None, 100, 100, 100)
 balas = []
-#----------------------------------------------------------
 
-#-------------------sets_de_enemigos-----------------------
-enemigos = [
-    Enemigo(400, 300),
-    Enemigo(200, 150)
-]
-#----------------------------------------------------------
+# -------------------sets_de_enemigos-----------------------
+enemigos = [Enemigo(400, 300), Enemigo(200, 150)]
 
-Ejecutando = True
-#--------------Variables de disparo para generar delay-----------------------------
+# --------------Variables de disparo para generar delay-----------------------------
 delay_disparo = 500
 ultimo_disparo = 0
-#----------------------------------------------------------------------------------
+
+# ----------------------------------------------------------------------------------
 while Ejecutando:
-    reloj.tick(60)
-    
+    time_delta = reloj.tick(60) / 1000.0
     for evento in pygame.event.get():
         if evento.type == pygame.QUIT:
             Ejecutando = False
-    
+        manager.process_events(evento)
+    manager.update(time_delta)
+
     keys = pygame.key.get_pressed()
     jugador.Moverse(keys)
-        
+
     tiempo_actual = pygame.time.get_ticks()
-    
+
     for enemigo in enemigos:
         enemigo.seguir_jugador(jugador)
         enemigo.colision_con_jugador(jugador)
 
-#=====================[sets_teclas_disparo]==========================================
+    pantalla.blit(background, (0, 0))
+    manager.draw_ui(pantalla)
+
+    # =====================[sets_teclas_disparo]==========================================
     if keys[pygame.K_RIGHT] and tiempo_actual - ultimo_disparo > delay_disparo:
         balas.append(Bala(jugador.x + 50, jugador.y + 50, 1, 0))
-        jugador.direccion_actual = "DERECHA" # Fuerza a mirar al lado del disparo
+        jugador.direccion_actual = "DERECHA"  # Fuerza a mirar al lado del disparo
         ultimo_disparo = tiempo_actual
 
     elif keys[pygame.K_LEFT] and tiempo_actual - ultimo_disparo > delay_disparo:
@@ -61,27 +69,24 @@ while Ejecutando:
     elif keys[pygame.K_DOWN] and tiempo_actual - ultimo_disparo > delay_disparo:
         balas.append(Bala(jugador.x, jugador.y, 0, 1))
         ultimo_disparo = tiempo_actual
-        
+
     # LIMPIADOR DE LA PANTALLA
     pantalla.fill((45, 55, 32))
-    
-    
-    
-    
-#-------------------muestreo_pantalla-------------------------------
+
+    # -------------------muestreo_pantalla-------------------------------
     for bala in balas[:]:
         bala.Trayectoria()
-        bala.Dibujar(pantalla)    
+        bala.Dibujar(pantalla)
         # Eliminar balas que salen de la pantalla
         if bala.x < 0 or bala.x > 800 or bala.y < 0 or bala.y > 600:
             balas.remove(bala)
-        
+
     for enemigo in enemigos:
         enemigo.dibujar(pantalla)
-                    
+
     jugador.Dibujo(pantalla)
     pygame.display.flip()
-    #-------------------------------------------------------------------  
+    # -------------------------------------------------------------------
 
-        
+
 pygame.quit()
