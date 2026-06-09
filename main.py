@@ -58,35 +58,58 @@ while Ejecutando:
         ultimo_disparo = tiempo_actual
 
     elif keys[pygame.K_LEFT] and tiempo_actual - ultimo_disparo > delay_disparo:
-        balas.append(Bala(jugador.x + 50, jugador.y + 50, -1, 0))
+        bala = Bala(jugador.x + 50, jugador.y + 50, -1, 0)
+        balas.append(bala)
+        entidades.append(bala)
         jugador.direccion_actual = "IZQUIERDA"
         ultimo_disparo = tiempo_actual
 
     elif keys[pygame.K_UP] and tiempo_actual - ultimo_disparo > delay_disparo:
-        balas.append(Bala(jugador.x, jugador.y, 0, -1))
+        bala = Bala(jugador.x, jugador.y, 0, -1)
+        balas.append(bala)
+        entidades.append(bala)
         ultimo_disparo = tiempo_actual
 
     elif keys[pygame.K_DOWN] and tiempo_actual - ultimo_disparo > delay_disparo:
-        balas.append(Bala(jugador.x, jugador.y, 0, 1))
+        bala = Bala(jugador.x, jugador.y, 0, 1)
+        balas.append(bala)
+        entidades.append(bala)
         ultimo_disparo = tiempo_actual
-
-    # LIMPIADOR DE LA PANTALLA
-    pantalla.fill((45, 55, 32))
 
     # -------------------muestreo_pantalla-------------------------------
     for bala in balas[:]:
         bala.Trayectoria()
         bala.Dibujar(pantalla)
-        # Eliminar balas que salen de la pantalla
-        if bala.x < 0 or bala.x > 800 or bala.y < 0 or bala.y > 600:
-            balas.remove(bala)
 
     for enemigo in enemigos:
         enemigo.dibujar(pantalla)
 
     jugador.Dibujo(pantalla)
     pygame.display.flip()
-    # -------------------------------------------------------------------
+    
+    #-------------------- DICCIONARIO ARGUMENTOS --------------------
+    # Para usar en actualizar
+    dic_args = {Jugador: [pantalla, keys],
+                Enemigo: [pantalla, jugador],
+                Bala: [pantalla]
+                }
+    
+    #-------------------- ACTUALIZA LISTA GENERAL --------------------
+    for entidad in entidades[:]:
+        # Obtengo argumentos
+        args = dic_args[type(entidad)]
+        entidad.actualizar(*args)
 
+        # Eliminar balas que salen de la pantalla
+        if isinstance(entidad,Bala):
+            if entidad.x < 0 or entidad.x > 800 or entidad.y < 0 or entidad.y > 600:
+                # Sincronizo ambas listas, mantengo balas para otras funciones
+                balas.remove(entidad)
+                entidades.remove(entidad)
+                
+    # LIMPIADOR DE LA PANTALLA
+    pantalla.fill((45, 55, 32))
+    
+    pygame.display.flip()
 
 pygame.quit()
