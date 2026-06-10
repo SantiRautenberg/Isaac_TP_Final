@@ -54,9 +54,12 @@ class Mapa(Base):
     def colision(self, rect_jugador):
         if self.piso_actual is not None:
             return self.piso_actual.colision(rect_jugador)
-
         return False
-
+    
+    def cambiar_sala_por_direccion(self, direccion):
+        if self.piso_actual is not None:
+            return self.piso_actual.cambiar_sala_por_direccion(direccion)
+        return False
 
 class Piso(Base):
     def __init__(self, numero):
@@ -74,12 +77,26 @@ class Piso(Base):
         self.salas["comun_4"] = self.crear_sala_comun("comun_4")
 
         self.salas["tesoro"] = Sala("tesoro", tipo="tesoro", color_fondo=(45, 40, 20))
-        self.salas["boss"] = Sala("boss", tipo="jefe", color_fondo=(45, 20, 20))
+        self.salas["boss"] = Sala("boss", tipo="boss", color_fondo=(45, 20, 20))
+
+        # =====================[CONEXIONES ENTRE SALAS]=====================
+
+        self.salas["comun_1"].conectar("DERECHA", "comun_2")
+        self.salas["comun_1"].conectar("ABAJO", "comun_3")
+        self.salas["comun_2"].conectar("IZQUIERDA", "comun_1")
+        self.salas["comun_2"].conectar("DERECHA", "tesoro")
+        self.salas["comun_3"].conectar("ARRIBA", "comun_1")
+        self.salas["comun_3"].conectar("DERECHA", "comun_4")
+        self.salas["comun_4"].conectar("IZQUIERDA", "comun_3")
+        self.salas["comun_4"].conectar("DERECHA", "boss")
+        self.salas["tesoro"].conectar("IZQUIERDA", "comun_2")
+        self.salas["boss"].conectar("IZQUIERDA", "comun_4")
+
+ 
         self.sala_actual = self.salas["comun_1"]
 
     def crear_sala_comun(self, nombre):
         sala = Sala(nombre, tipo="comun", color_fondo=(35, 30, 35))
-    
         sala.agregar_obstaculo(Obstaculo(200, 200, 100, 50))
         sala.agregar_obstaculo(Obstaculo(400, 300, 80, 80))
         return sala
@@ -99,7 +116,16 @@ class Piso(Base):
     def colision(self, rect_jugador):
         if self.sala_actual is not None:
             return self.sala_actual.colision(rect_jugador)
+        return False
 
+    def cambiar_sala_por_direccion(self, direccion):
+        if self.sala_actual is None:
+            return False
+
+        if direccion in self.sala_actual.conexiones:
+            nombre_siguiente = self.sala_actual.conexiones[direccion]
+            self.sala_actual = self.salas[nombre_siguiente]
+            return True
         return False
 
 class Sala(Base):
@@ -109,6 +135,11 @@ class Sala(Base):
         self.tipo = tipo
         self.color_fondo = color_fondo
         self.obstaculos = []
+        self.conexiones = {}
+        
+        
+    def conectar(self, direccion, nombre_sala):
+        self.conexiones[direccion] = nombre_sala
 
     def agregar_obstaculo(self, obstaculo):
         self.obstaculos.append(obstaculo)

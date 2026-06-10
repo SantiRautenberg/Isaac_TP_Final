@@ -65,7 +65,7 @@ class Jugador(Base):
             self.sprite = self.animacion_caminando[self.indice_animacion]
                 
             # Si camina hacia la izquierda, invertimos horizontalmente el cuadro actual
-            if self.direccion_actual == "IZQUIERDA":
+            if self.direccion_actual == "DERECHA": #ahora si camina a la derecha
                 self.sprite = pygame.transform.flip(self.sprite, True, False)
         else:
             # Si se queda quieto, vuelve al sprite estático de su dirección
@@ -119,4 +119,6 @@ class Jugador(Base):
 
     def actualizar(self, pantalla, keys, mapa):
         self.Moverse(keys, mapa)
-        self.dibujar(pantalla)
+
+
+    
