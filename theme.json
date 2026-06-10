@@ -1,0 +1,27 @@
+{
+    "defaults": {
+        "font": {
+            "name": "fuente_isaac.ttf",
+            "size": "14"
+        }
+    },
+    "button": {
+        "font": {
+            "name": "fuente_isaac.ttf",
+            "size": "16",
+            "bold": "1"
+        },
+        "colours": {
+            "normal_bg": "#2A2A40",
+            "hovered_bg": "#3A3A55",
+            "active_bg": "#4A4A70",
+            "normal_text": "#FFFFFF",
+            "hovered_text": "#AABBFF"
+        },
+        "misc": {
+            "border_width": "2",
+            "shadow_width": "4",
+            "border_colour": "#4A4A70"
+        }
+    }
+}

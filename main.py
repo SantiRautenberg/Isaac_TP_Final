@@ -12,7 +12,6 @@ resolucion = (800, 600)  # Resolución de la pantalla
 # Inicializamos el juego y el gestor de interfaces
 pygame.init()
 pygame.display.set_caption("Isaac TP Final")
-manager = pygame_gui.UIManager((resolucion))
 
 # instancio la pantalla, el jugador y el reloj
 pantalla = pygame.display.set_mode((resolucion))
@@ -23,6 +22,12 @@ Ejecutando = True
 ruta_base = os.path.dirname(__file__)
 ruta_imagenes = os.path.join(ruta_base, "imagenes", "jugador")
 ruta_sonidos = os.path.join(ruta_base, "sonidos")
+ruta_themes = os.path.join(ruta_base, "config", "theme.json")  # Configuracion estetica
+ruta_fuente = os.path.join(ruta_base, "fuentes", "fuente_isaac.ttf")
+
+manager = pygame_gui.UIManager((resolucion), theme_path=ruta_themes)
+manager.add_font_paths(font_name="fuente_isaac.ttf", regular_path=ruta_fuente)
+manager.preload_fonts([{"name": "fuente_isaac.ttf", "size": 14}, {"name": "fuente_isaac.ttf", "size": 16}])
 
 # -----------------sets_de_audio_y_menu---------------------
 en_menu = True  # Estado inicial que determina el bucle activo
@@ -37,23 +42,41 @@ else:
     print(f"[Aviso] No se encontró el archivo de audio en: {archivo_audio}")
 
 # -----------------CREACION COMPONENTES UI------------------
-titulo_texto = "ISAAC ARGENTO v0.1"
-label_titulo = pygame_gui.elements.UILabel(
-    relative_rect=pygame.Rect((resolucion[0] // 2 - 200, 100), (400, 50)),
-    text=titulo_texto,
+ancho_titulo, alto_titulo = 500, 100
+x_titulo = resolucion[0] // 2 - ancho_titulo // 2
+y_titulo = 60
+fuente_titulo = pygame.font.Font(ruta_fuente, 30)
+
+# Creamos una superficie transparente donde poner el fondo de la bandera
+superficie_cartel = pygame.Surface((ancho_titulo, alto_titulo), pygame.SRCALPHA)
+
+# Dibujamos las tres franjas horizontales de la bandera (Celeste - Blanco - Celeste)
+pygame.draw.rect(superficie_cartel, (116, 172, 223), (0, 0, ancho_titulo, int(alto_titulo * 0.35)))
+pygame.draw.rect(superficie_cartel, (255, 255, 255), (0, int(alto_titulo * 0.35), ancho_titulo, int(alto_titulo * 0.30)))
+pygame.draw.rect(superficie_cartel, (116, 172, 223), (0, int(alto_titulo * 0.65), ancho_titulo, int(alto_titulo * 0.35)))
+
+# Renderizado del texto del título centrado sobre la bandera
+texto_renderizado = fuente_titulo.render("ISAAC ARGENTO v0.1", True, (10, 20, 40))
+texto_rect = texto_renderizado.get_rect(center=(ancho_titulo // 2, alto_titulo // 2))
+superficie_cartel.blit(texto_renderizado, texto_rect)
+
+# Configurado todo, se pasa al manager de UI
+label_titulo = pygame_gui.elements.UIImage(
+    relative_rect=pygame.Rect((x_titulo, y_titulo), (ancho_titulo, alto_titulo)),
+    image_surface=superficie_cartel,
     manager=manager
 )
 
 # Botones principales
 boton_iniciar = pygame_gui.elements.UIButton(
     relative_rect=pygame.Rect((resolucion[0] // 2 - 100, 250), (200, 50)),
-    text="Iniciar juego",
+    text="JUGAR",
     manager=manager
 )
 
 boton_salir = pygame_gui.elements.UIButton(
     relative_rect=pygame.Rect((resolucion[0] // 2 - 100, 330), (200, 50)),
-    text="Salir del juego",
+    text="SALIR",
     manager=manager
 )
 
