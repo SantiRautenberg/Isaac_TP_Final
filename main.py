@@ -2,6 +2,7 @@ import pygame
 from personaje import Jugador
 from bala import Bala
 from enemigo import Enemigo
+from mapa import Mapa
 
 pygame.init()
 #instancio la pantalla, el jugador y el clock
@@ -11,6 +12,7 @@ reloj = pygame.time.Clock()
 
 #----------------sets_del_personaje------------------------
 jugador = Jugador("Isaac", 3, 5, 1, None, 100, 100, 100)
+mapa = Mapa()
 balas = []
 #----------------------------------------------------------
 
@@ -21,7 +23,6 @@ enemigos = [
 ]
 
 #------------------LISTA GENERAL---------------------------
-# Concateno las listas para poder iterar luego
 entidades = [jugador] + enemigos + balas
 #----------------------------------------------------------
 
@@ -72,17 +73,19 @@ while Ejecutando:
         
     #-------------------- DICCIONARIO ARGUMENTOS --------------------
     # Para usar en actualizar
-    dic_args = {Jugador: [pantalla, keys],
-                Enemigo: [pantalla, jugador],
-                Bala: [pantalla]
-                }
+    dic_args = {
+        Jugador: [pantalla, keys, mapa],
+        Enemigo: [pantalla, jugador],
+        Bala: [pantalla]
+    }
    
     # LIMPIADOR DE LA PANTALLA
-    pantalla.fill((45, 55, 32))
+    mapa.actualizar(pantalla)
+    mapa.dibujar(pantalla)
     
     #-------------------- ACTUALIZA LISTA GENERAL --------------------
     for entidad in entidades[:]:
-        # Obtengo argumentos
+
         args = dic_args[type(entidad)]
         entidad.actualizar(*args)
 
