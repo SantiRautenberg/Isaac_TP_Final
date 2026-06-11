@@ -9,7 +9,7 @@ class Jugador(Base):
     def __init__(self, nombre, vida, vel_movimiento, daño, proyectil, rango, x, y):
         super().__init__(x, y)
         self.nombre = nombre
-        self.vida = vida
+        self.__vida = vida
         self.vel_movimiento = vel_movimiento
         self.daño = daño
         self.proyectil = proyectil
@@ -51,6 +51,7 @@ class Jugador(Base):
 
         # sprite por defecto (Sprite de mirar hacia abajo)
         self.sprite = self.sprites_direcciones[self.direccion_actual]
+        self.rect = pygame.Rect(self.x, self.y, self.dimensiones[0], self.dimensiones[1])
 
     def actualizarAnimacion(self):
         tiempo_actual = pygame.time.get_ticks()
@@ -64,41 +65,76 @@ class Jugador(Base):
             self.sprite = self.animacion_caminando[self.indice_animacion]
                 
             # Si camina hacia la izquierda, invertimos horizontalmente el cuadro actual
-            if self.direccion_actual == "IZQUIERDA":
+            if self.direccion_actual == "DERECHA": #ahora si camina a la derecha
                 self.sprite = pygame.transform.flip(self.sprite, True, False)
         else:
             # Si se queda quieto, vuelve al sprite estático de su dirección
             self.sprite = self.sprites_direcciones[self.direccion_actual]
+            self.rect = pygame.Rect(self.x, self.y, self.dimensiones[0], self.dimensiones[1])
 
-    def moverse(self, keys):
-        # Reiniciamos el estado a Falso en cada frame. Solo cambia a Verdadero si toca una tecla.
+    # Encapsulamiento
+
+    # Getter para stats
+    def get_vida(self):
+        return self.__vida
+    
+    # Setter con validación para recibirDaño
+    def set_vida(self, valor):
+        self.__vida -= valor
+        if self.__vida<0:
+            self.__vida=0
+        return self.__vida
+    
+    def recibirDaño(self, valor):
+        self.set_vida(valor)
+
+    def moverse(self, keys, mapa):
         self.esta_moviendose = False
 
-        if keys[pygame.K_a]:    # Izquierda
-            self.x -= self.vel_movimiento
+        dx = 0
+        dy = 0
+
+        if keys[pygame.K_a]:
+            dx = -self.vel_movimiento
             self.direccion_actual = "IZQUIERDA"
             self.esta_moviendose = True
-        elif keys[pygame.K_d]:  # Derecha
-            self.x += self.vel_movimiento
+        elif keys[pygame.K_d]:
+            dx = self.vel_movimiento
             self.direccion_actual = "DERECHA"
             self.esta_moviendose = True
-            
-        if keys[pygame.K_w]:    # Arriba
-            self.y -= self.vel_movimiento
+
+        if keys[pygame.K_w]:
+            dy = -self.vel_movimiento
             self.direccion_actual = "ARRIBA"
             self.esta_moviendose = True
-        elif keys[pygame.K_s]:  # Abajo
-            self.y += self.vel_movimiento
+        elif keys[pygame.K_s]:
+            dy = self.vel_movimiento
             self.direccion_actual = "ABAJO"
             self.esta_moviendose = True
+
+        # Probar movimiento en X
+        nuevo_rect = self.rect.copy()
+        nuevo_rect.x += dx
+
+        if not mapa.colision(nuevo_rect):
+            self.x += dx
+            self.rect.x = self.x
+
+        # Probar movimiento en Y
+        nuevo_rect = self.rect.copy()
+        nuevo_rect.y += dy
+
+        if not mapa.colision(nuevo_rect):
+            self.y += dy
+            self.rect.y = self.y
+
         self.actualizarAnimacion()
-        
+ 
     def dibujar(self, pantalla):
-        # Renderiza el sprite para cada frame en la posición actual del jugador
         pantalla.blit(self.sprite, (self.x, self.y))
 
-    def actualizar(self, pantalla, keys):
-        self.moverse(keys)
-        self.dibujar(pantalla)
-
+    def actualizar(self, keys, mapa):
+        self.moverse(keys, mapa)
+    
+    
     

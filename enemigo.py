@@ -31,16 +31,17 @@ class Enemigo(Base):
             tiempo_actual = pygame.time.get_ticks()
 
             if tiempo_actual - self.ultimo_hit > self.cooldown_daño:
-                jugador.vida -= self.daño
+                jugador.recibirDaño(self.daño)
                 self.ultimo_hit = tiempo_actual
 
     def dibujar(self, pantalla):
         pygame.draw.circle(pantalla, (200, 50, 50), (int(self.x), int(self.y)), 15)
         pygame.draw.circle(pantalla, (120, 0, 0), (int(self.x), int(self.y)), 7)
 
-    def actualizar(self, pantalla, jugador):
+    def actualizar(self, jugador):
         self.seguir_jugador(jugador)
         self.colision_con_jugador(jugador)
-        self.dibujar(pantalla)
+
+
     
     
