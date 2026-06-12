@@ -227,9 +227,9 @@ while Ejecutando:
 #-------------------- DICCIONARIO ARGUMENTOS --------------------
     # Para usar en actualizar
     dic_args = {
-        Jugador: [keys, mapa],
-        Enemigo: [jugador],
-        Bala: []
+        Jugador: [pantalla, keys, mapa],
+        Enemigo: [pantalla, jugador],
+        Bala: [pantalla]
     }
    
     # LIMPIADOR DE LA PANTALLA

@@ -133,8 +133,8 @@ class Jugador(Base):
     def dibujar(self, pantalla):
         pantalla.blit(self.sprite, (self.x, self.y))
 
-    def actualizar(self, keys, mapa):
-        self.moverse(keys, mapa)
-    
-    
+    def actualizar(self, pantalla, keys, mapa):
+        self.Moverse(keys, mapa)
+
+
     
