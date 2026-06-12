@@ -18,24 +18,6 @@ pygame.display.set_caption("Isaac TP Final")
 pantalla = pygame.display.set_mode((resolucion))
 reloj = pygame.time.Clock()
 
-#----------------sets_del_personaje------------------------
-jugador = Jugador("Isaac", 3, 5, 1, None, 100, 100, 100)
-mapa = Mapa()
-balas = []
-#----------------------------------------------------------
-
-#-------------------sets_de_enemigos-----------------------
-enemigos = [
-    Enemigo(400, 300),
-    Enemigo(200, 150)
-]
-
-#------------------LISTA GENERAL---------------------------
-entidades = [jugador] + enemigos + balas
-#----------------------------------------------------------
-
-Ejecutando = True
-
 # ----------------- RUTAS DE ASSETS ----------------
 ruta_base = os.path.dirname(__file__)
 ruta_imagenes = os.path.join(ruta_base, "imagenes", "jugador")
@@ -97,6 +79,7 @@ boton_salir = pygame_gui.elements.UIButton(
 
 # ----------------sets_del_personaje------------------------
 jugador = Jugador("Isaac", 3, 5, 1, None, 100, 100, 100)
+mapa = Mapa()
 balas = []
 # -------------------sets_de_enemigos-----------------------
 enemigos = [Enemigo(400, 300), Enemigo(200, 150)]
@@ -106,8 +89,9 @@ entidades = [jugador] + enemigos + balas
 delay_disparo = 500
 ultimo_disparo = 0
 # ----------------------------------------------------------------------------------
-#========================manejo de salas=============================================
+Ejecutando = True
 
+#========================manejo de salas=============================================
 def revisar_cambio_sala(jugador, mapa, resolucion):
     ancho_pantalla, alto_pantalla = resolucion
     margen = 10
@@ -168,8 +152,6 @@ while en_menu:
     manager.update(time_delta)
     manager.draw_ui(pantalla)
     pygame.display.flip()
-    
-
 
 # =====================[BUCLE PRINCIPAL DE LA PARTIDA]==============================
 while Ejecutando:
@@ -177,16 +159,16 @@ while Ejecutando:
     tiempo_actual = pygame.time.get_ticks()
     keys = pygame.key.get_pressed()
     
-        # =====================[TEST CAMBIO DE SALAS]=====================
-    if keys[pygame.K_1]:mapa.cambiar_sala("comun_1")
-    if keys[pygame.K_2]:mapa.cambiar_sala("comun_2")
-    if keys[pygame.K_3]:mapa.cambiar_sala("tesoro")
-    if keys[pygame.K_4]:mapa.cambiar_sala("boss")
+    # =====================[TEST CAMBIO DE SALAS]=====================
+    if keys[pygame.K_1]: mapa.cambiar_sala("comun_1")
+    if keys[pygame.K_2]: mapa.cambiar_sala("comun_2")
+    if keys[pygame.K_3]: mapa.cambiar_sala("tesoro")
+    if keys[pygame.K_4]: mapa.cambiar_sala("boss")
 
     # =====================[TEST CAMBIO DE PISOS]=====================
-    if keys[pygame.K_F1]:mapa.cambiar_piso(1)
-    if keys[pygame.K_F2]:mapa.cambiar_piso(2)
-    if keys[pygame.K_F3]:mapa.cambiar_piso(3)
+    if keys[pygame.K_F1]: mapa.cambiar_piso(1)
+    if keys[pygame.K_F2]: mapa.cambiar_piso(2)
+    if keys[pygame.K_F3]: mapa.cambiar_piso(3)
         
     for evento in pygame.event.get():
         if evento.type == pygame.QUIT:
@@ -196,32 +178,33 @@ while Ejecutando:
     manager.update(time_delta)
     
 # =====================[sets_teclas_disparo]==========================================
+    # CORRECCIÓN: Forzamos el cambio de mirada UNICAMENTE si se efectúa el disparo exitoso
     if keys[pygame.K_RIGHT] and tiempo_actual - ultimo_disparo > delay_disparo:
         bala = Bala(jugador.x + 50, jugador.y + 50, 1, 0)
         balas.append(bala)
         entidades.append(bala)
-        jugador.direccion_actual = "DERECHA"  # Fuerza a mirar al lado del disparo
+        jugador.direccion_actual = "DERECHA"
         ultimo_disparo = tiempo_actual
 
     elif keys[pygame.K_LEFT] and tiempo_actual - ultimo_disparo > delay_disparo:
         bala = Bala(jugador.x + 50, jugador.y + 50, -1, 0)
         balas.append(bala)
         entidades.append(bala)
-        jugador.direccion_actual = "IZQUIERDA"  # Fuerza a mirar al lado del disparo
+        jugador.direccion_actual = "IZQUIERDA"
         ultimo_disparo = tiempo_actual
 
     elif keys[pygame.K_UP] and tiempo_actual - ultimo_disparo > delay_disparo:
-        bala = Bala(jugador.x, jugador.y, 0, -1)
+        bala = Bala(jugador.x + 25, jugador.y, 0, -1)
         balas.append(bala)
         entidades.append(bala)
-        jugador.direccion_actual = "ARRIBA"  # Fuerza a mirar al lado del disparo
+        jugador.direccion_actual = "ARRIBA"
         ultimo_disparo = tiempo_actual
 
     elif keys[pygame.K_DOWN] and tiempo_actual - ultimo_disparo > delay_disparo:
-        bala = Bala(jugador.x, jugador.y, 0, 1)
+        bala = Bala(jugador.x + 25, jugador.y + 50, 0, 1)
         balas.append(bala)
         entidades.append(bala)
-        jugador.direccion_actual = "ABAJO"  # Fuerza a mirar al lado del disparo
+        jugador.direccion_actual = "ABAJO"
         ultimo_disparo = tiempo_actual
 
 #-------------------- DICCIONARIO ARGUMENTOS --------------------
@@ -239,14 +222,14 @@ while Ejecutando:
 #-------------------- ACTUALIZA LISTA GENERAL --------------------
 # Dibuja todas las entidades en pantalla por polimorfismo
     for entidad in entidades[:]:
-
         args = dic_args[type(entidad)]
         entidad.actualizar(*args)
         entidad.dibujar(pantalla)
         
         if isinstance(entidad, Bala):
             if entidad.x < 0 or entidad.x > 800 or entidad.y < 0 or entidad.y > 600:
-                balas.remove(entidad)
+                if entidad in balas:
+                    balas.remove(entidad)
                 entidades.remove(entidad)
 
     # Revisar si el jugador tocó un borde para cambiar de sala
