@@ -1,242 +1,57 @@
+# main.py
 import pygame
 import pygame_gui
 import os
 import sys
 # Importar las clases desde sus respectivos archivos
-from personaje import Jugador
-from bala import Bala
-from enemigo import Enemigo
-from mapa import Mapa
+from audio import AudioManager
+import escenas  # Importamos el módulo completo para evitar errores de herencia circular
 
 resolucion = (800, 600)  # Resolución de la pantalla
 
-# Inicializamos el juego y el gestor de interfaces
+# Inicializamos el juego
 pygame.init()
 pygame.display.set_caption("Isaac TP Final")
 
-# instancio la pantalla, el jugador y el reloj
+# instancio la pantalla y el reloj
 pantalla = pygame.display.set_mode((resolucion))
 reloj = pygame.time.Clock()
+Ejecutando = True
 
 # ----------------- RUTAS DE ASSETS ----------------
 ruta_base = os.path.dirname(__file__)
-ruta_imagenes = os.path.join(ruta_base, "imagenes", "jugador")
 ruta_sonidos = os.path.join(ruta_base, "sonidos")
 ruta_themes = os.path.join(ruta_base, "config", "theme.json")  # Configuracion estetica
 ruta_fuente = os.path.join(ruta_base, "fuentes", "fuente_isaac.ttf")
 
-manager = pygame_gui.UIManager((resolucion), theme_path=ruta_themes)
-manager.add_font_paths(font_name="fuente_isaac.ttf", regular_path=ruta_fuente)
-manager.preload_fonts([{"name": "fuente_isaac.ttf", "size": 14}, {"name": "fuente_isaac.ttf", "size": 16}])
+# ----------------- INSTANCIAS DE MANAGERS EXTERNOS -----------------
+audio_manager = AudioManager(ruta_sonidos)
+ui_manager = pygame_gui.UIManager((resolucion))
 
-# -----------------sets_de_audio_y_menu---------------------
-en_menu = True  # Estado inicial que determina el bucle activo
-archivo_audio = os.path.join(ruta_sonidos, "musica_menu.mp3")
+# Cargamos la tipografia a usar
+if os.path.exists(ruta_fuente):
+    ui_manager.add_font_paths(font_name="fuente_isaac.ttf", regular_path=ruta_fuente)
+    ui_manager.preload_fonts([
+        {"name": "fuente_isaac.ttf", "size": 14}, 
+        {"name": "fuente_isaac.ttf", "size": 16}
+    ])
+    # Cargamos el JSON estetico
+    if os.path.exists(ruta_themes):
+        ui_manager.get_theme().load_theme(ruta_themes)
 
-# Valida y carga la música de fondo en bucle para el menú desde la carpeta sonidos
-if os.path.exists(archivo_audio):
-    pygame.mixer.music.load(archivo_audio)
-    pygame.mixer.music.set_volume(0.2)
-    pygame.mixer.music.play(-1)
-else:
-    print(f"[Aviso] No se encontró el archivo de audio en: {archivo_audio}")
+scene_manager = escenas.SceneManager(pantalla, resolucion, audio_manager, ui_manager, ruta_themes, ruta_fuente)
+# Iniciamos el Menu
+scene_manager.cambiar_escena(escenas.EscenaMenu(scene_manager))
 
-# -----------------CREACION COMPONENTES UI------------------
-ancho_titulo, alto_titulo = 500, 100
-x_titulo = resolucion[0] // 2 - ancho_titulo // 2
-y_titulo = 60
-fuente_titulo = pygame.font.Font(ruta_fuente, 30)
-
-# Creamos una superficie transparente donde poner el fondo de la bandera
-superficie_cartel = pygame.Surface((ancho_titulo, alto_titulo), pygame.SRCALPHA)
-
-# Dibujamos las tres franjas horizontales de la bandera (Celeste - Blanco - Celeste)
-pygame.draw.rect(superficie_cartel, (116, 172, 223), (0, 0, ancho_titulo, int(alto_titulo * 0.35)))
-pygame.draw.rect(superficie_cartel, (255, 255, 255), (0, int(alto_titulo * 0.35), ancho_titulo, int(alto_titulo * 0.30)))
-pygame.draw.rect(superficie_cartel, (116, 172, 223), (0, int(alto_titulo * 0.65), ancho_titulo, int(alto_titulo * 0.35)))
-
-# Renderizado del texto del título centrado sobre la bandera
-texto_renderizado = fuente_titulo.render("ISAAC ARGENTO v0.1", True, (10, 20, 40))
-texto_rect = texto_renderizado.get_rect(center=(ancho_titulo // 2, alto_titulo // 2))
-superficie_cartel.blit(texto_renderizado, texto_rect)
-
-# Configurado todo, se pasa al manager de UI
-label_titulo = pygame_gui.elements.UIImage(
-    relative_rect=pygame.Rect((x_titulo, y_titulo), (ancho_titulo, alto_titulo)),
-    image_surface=superficie_cartel,
-    manager=manager)
-
-# Botones principales
-boton_iniciar = pygame_gui.elements.UIButton(
-    relative_rect=pygame.Rect((resolucion[0] // 2 - 100, 250), (200, 50)),
-    text="JUGAR",
-    manager=manager)
-
-boton_salir = pygame_gui.elements.UIButton(
-    relative_rect=pygame.Rect((resolucion[0] // 2 - 100, 330), (200, 50)),
-    text="SALIR",
-    manager=manager)
-
-# ----------------sets_del_personaje------------------------
-jugador = Jugador("Isaac", 3, 5, 1, None, 100, 100, 100)
-mapa = Mapa()
-balas = []
-# -------------------sets_de_enemigos-----------------------
-enemigos = [Enemigo(400, 300), Enemigo(200, 150)]
-# ------------------LISTA GENERAL---------------------------
-entidades = [jugador] + enemigos + balas
-# --------------Variables de disparo para generar delay-----------------------------
-delay_disparo = 500
-ultimo_disparo = 0
-# ----------------------------------------------------------------------------------
-Ejecutando = True
-
-#========================manejo de salas=============================================
-def revisar_cambio_sala(jugador, mapa, resolucion):
-    ancho_pantalla, alto_pantalla = resolucion
-    margen = 10
-
-    if jugador.rect.left <= 0:
-        if mapa.cambiar_sala_por_direccion("IZQUIERDA"):
-            jugador.x = ancho_pantalla - jugador.dimensiones[0] - margen
-        else:
-            jugador.x = 0
-        jugador.rect.x = jugador.x
-
-    elif jugador.rect.right >= ancho_pantalla:
-        if mapa.cambiar_sala_por_direccion("DERECHA"):
-            jugador.x = margen
-        else:
-            jugador.x = ancho_pantalla - jugador.dimensiones[0]
-        jugador.rect.x = jugador.x
-
-    elif jugador.rect.top <= 0:
-        if mapa.cambiar_sala_por_direccion("ARRIBA"):
-            jugador.y = alto_pantalla - jugador.dimensiones[1] - margen
-        else:
-            jugador.y = 0
-        jugador.rect.y = jugador.y
-
-    elif jugador.rect.bottom >= alto_pantalla:
-        if mapa.cambiar_sala_por_direccion("ABAJO"):
-            jugador.y = margen
-        else:
-            jugador.y = alto_pantalla - jugador.dimensiones[1]
-        jugador.rect.y = jugador.y
-
-# =====================[BUCLE PRINCIPAL DEL MENU]===================================
-while en_menu:
-    time_delta = reloj.tick(60) / 1000.0
-    pantalla.fill((20, 20, 30)) # Fondo oscuro espacial para la UI de inicio
-
-    for evento in pygame.event.get():
-        if evento.type == pygame.QUIT:
-            pygame.quit()
-            sys.exit()
-
-        # Verifica si se toco un boton
-        if evento.type == pygame_gui.UI_BUTTON_PRESSED:
-            if evento.ui_element == boton_iniciar:
-                pygame.mixer.music.stop()
-                # Los botones hay que matarlos para liberar la memoria
-                label_titulo.kill()
-                boton_iniciar.kill()
-                boton_salir.kill()
-                en_menu = False # Rompe el ciclo del menú y permite el paso al juego
-
-            elif evento.ui_element == boton_salir:
-                pygame.quit()
-                sys.exit()
-        manager.process_events(evento)
-
-    manager.update(time_delta)
-    manager.draw_ui(pantalla)
-    pygame.display.flip()
-
-# =====================[BUCLE PRINCIPAL DE LA PARTIDA]==============================
+# =====================[BUCLE UNICO DEL JUEGO]======================================
 while Ejecutando:
     time_delta = reloj.tick(60) / 1000.0
     tiempo_actual = pygame.time.get_ticks()
     keys = pygame.key.get_pressed()
+
+    scene_manager.actualizar(time_delta, tiempo_actual, keys)
+    scene_manager.dibujar()
     
-    # =====================[TEST CAMBIO DE SALAS]=====================
-    if keys[pygame.K_1]: mapa.cambiar_sala("comun_1")
-    if keys[pygame.K_2]: mapa.cambiar_sala("comun_2")
-    if keys[pygame.K_3]: mapa.cambiar_sala("tesoro")
-    if keys[pygame.K_4]: mapa.cambiar_sala("boss")
-
-    # =====================[TEST CAMBIO DE PISOS]=====================
-    if keys[pygame.K_F1]: mapa.cambiar_piso(1)
-    if keys[pygame.K_F2]: mapa.cambiar_piso(2)
-    if keys[pygame.K_F3]: mapa.cambiar_piso(3)
-        
-    for evento in pygame.event.get():
-        if evento.type == pygame.QUIT:
-            Ejecutando = False
-        manager.process_events(evento)
-        
-    manager.update(time_delta)
-    
-# =====================[sets_teclas_disparo]==========================================
-    # CORRECCIÓN: Forzamos el cambio de mirada UNICAMENTE si se efectúa el disparo exitoso
-    if keys[pygame.K_RIGHT] and tiempo_actual - ultimo_disparo > delay_disparo:
-        bala = Bala(jugador.x + 50, jugador.y + 50, 1, 0)
-        balas.append(bala)
-        entidades.append(bala)
-        jugador.direccion_actual = "DERECHA"
-        ultimo_disparo = tiempo_actual
-
-    elif keys[pygame.K_LEFT] and tiempo_actual - ultimo_disparo > delay_disparo:
-        bala = Bala(jugador.x + 50, jugador.y + 50, -1, 0)
-        balas.append(bala)
-        entidades.append(bala)
-        jugador.direccion_actual = "IZQUIERDA"
-        ultimo_disparo = tiempo_actual
-
-    elif keys[pygame.K_UP] and tiempo_actual - ultimo_disparo > delay_disparo:
-        bala = Bala(jugador.x + 25, jugador.y, 0, -1)
-        balas.append(bala)
-        entidades.append(bala)
-        jugador.direccion_actual = "ARRIBA"
-        ultimo_disparo = tiempo_actual
-
-    elif keys[pygame.K_DOWN] and tiempo_actual - ultimo_disparo > delay_disparo:
-        bala = Bala(jugador.x + 25, jugador.y + 50, 0, 1)
-        balas.append(bala)
-        entidades.append(bala)
-        jugador.direccion_actual = "ABAJO"
-        ultimo_disparo = tiempo_actual
-
-#-------------------- DICCIONARIO ARGUMENTOS --------------------
-    # Para usar en actualizar
-    dic_args = {
-        Jugador: [pantalla, keys, mapa],
-        Enemigo: [pantalla, jugador],
-        Bala: [pantalla]
-    }
-   
-    # LIMPIADOR DE LA PANTALLA
-    mapa.actualizar(pantalla)
-    mapa.dibujar(pantalla)
-    
-#-------------------- ACTUALIZA LISTA GENERAL --------------------
-# Dibuja todas las entidades en pantalla por polimorfismo
-    for entidad in entidades[:]:
-        args = dic_args[type(entidad)]
-        entidad.actualizar(*args)
-        entidad.dibujar(pantalla)
-        
-        if isinstance(entidad, Bala):
-            if entidad.x < 0 or entidad.x > 800 or entidad.y < 0 or entidad.y > 600:
-                if entidad in balas:
-                    balas.remove(entidad)
-                entidades.remove(entidad)
-
-    # Revisar si el jugador tocó un borde para cambiar de sala
-    revisar_cambio_sala(jugador, mapa, resolucion)
-                
-    # Renderiza UI después de actualizar para que esté por encima de todo
-    manager.draw_ui(pantalla)
     pygame.display.flip()
 
 pygame.quit()
