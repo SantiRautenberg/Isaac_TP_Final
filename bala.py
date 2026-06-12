@@ -23,6 +23,5 @@ class Bala(Base):
         
         pygame.draw.circle(pantalla, (200, 255, 200), (self.x + 2, self.y + 2), 2)
 
-    def actualizar(self,pantalla):
+    def actualizar(self):
         self.trayectoria()
-        self.dibujar(pantalla)

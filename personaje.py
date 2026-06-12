@@ -9,7 +9,7 @@ class Jugador(Base):
     def __init__(self, nombre, vida, vel_movimiento, daño, proyectil, rango, x, y):
         super().__init__(x, y)
         self.nombre = nombre
-        self.vida = vida
+        self.__vida = vida
         self.vel_movimiento = vel_movimiento
         self.daño = daño
         self.proyectil = proyectil
@@ -72,7 +72,23 @@ class Jugador(Base):
             self.sprite = self.sprites_direcciones[self.direccion_actual]
             self.rect = pygame.Rect(self.x, self.y, self.dimensiones[0], self.dimensiones[1])
 
-    def Moverse(self, keys, mapa):
+    # Encapsulamiento
+
+    # Getter para stats
+    def get_vida(self):
+        return self.__vida
+    
+    # Setter con validación para recibirDaño
+    def set_vida(self, valor):
+        self.__vida -= valor
+        if self.__vida<0:
+            self.__vida=0
+        return self.__vida
+    
+    def recibirDaño(self, valor):
+        self.set_vida(valor)
+
+    def moverse(self, keys, mapa):
         self.esta_moviendose = False
 
         dx = 0
