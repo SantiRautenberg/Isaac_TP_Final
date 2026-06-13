@@ -38,7 +38,7 @@ class Enemigo(Base):
         pygame.draw.circle(pantalla, (200, 50, 50), (int(self.x), int(self.y)), 15)
         pygame.draw.circle(pantalla, (120, 0, 0), (int(self.x), int(self.y)), 7)
 
-    def actualizar(self, jugador):
+    def actualizar(self, jugador, *args):
         self.seguir_jugador(jugador)
         self.colision_con_jugador(jugador)
 

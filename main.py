@@ -51,7 +51,6 @@ while Ejecutando:
 
     scene_manager.actualizar(time_delta, tiempo_actual, keys)
     scene_manager.dibujar()
-    
     pygame.display.flip()
 
 pygame.quit()

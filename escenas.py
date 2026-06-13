@@ -120,7 +120,6 @@ class EscenaJuego:
     
     def __init__(self, manager_escenas):
         self.manager = manager_escenas
-        
         # ----------------sets_del_personaje------------------------
         self.jugador = Jugador("Isaac", 3, 5, 1, None, 100, 100, 100)
         self.mapa = Mapa()
@@ -134,7 +133,7 @@ class EscenaJuego:
         self.ultimo_disparo = 0
 
     def inicializar(self):
-        self.interfaz = Interfaz(self.manager.resolucion, self.manager.ui_manager, self.manager.ruta_fuente)
+        pass
 
     def revisar_cambio_sala(self):
         ancho_pantalla, alto_pantalla = self.manager.resolucion
@@ -180,10 +179,7 @@ class EscenaJuego:
             if evento.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
-            self.interfaz.manager.process_events(evento)
             
-        self.interfaz.manager.update(time_delta)
-        
         # =====================[sets_teclas_disparo]==========================================
         if keys[pygame.K_RIGHT] and tiempo_actual - self.ultimo_disparo > self.delay_disparo:
             bala = Bala(self.jugador.x + 50, self.jugador.y + 50, 1, 0)
@@ -217,20 +213,17 @@ class EscenaJuego:
             self.manager.audio_manager.reproducir_sfx("disparo")
             self.ultimo_disparo = tiempo_actual
 
-        # Actualizamos el mapa
         self.mapa.actualizar(self.manager.pantalla)
-        
         # -------------------- CORRECCIÓN DE MOVIMIENTO DIRECTO --------------------
         self.jugador.actualizar(self.manager.pantalla, keys, self.mapa)
-
         #-------------------- ACTUALIZA EL RESTO DE ENTIDADES --------------------
-        # Corremos el bucle polimórfico solo para los enemigos y las balas
         for entidad in self.entidades[:]:
             if isinstance(entidad, Enemigo):
-                entidad.actualizar(self.manager.pantalla, self.jugador)
+                entidad.actualizar(self.jugador)
             elif isinstance(entidad, Bala):
                 entidad.actualizar(self.manager.pantalla)
-                # Limpieza para las balas
+                
+                # Limpieza de balas que salen de la pantalla
                 if entidad.x < 0 or entidad.x > 800 or entidad.y < 0 or entidad.y > 600:
                     if entidad in self.balas:
                         self.balas.remove(entidad)
@@ -240,7 +233,9 @@ class EscenaJuego:
         self.revisar_cambio_sala()
 
     def dibujar(self):
+        # Mapa
         self.mapa.dibujar(self.manager.pantalla)
+        
+        # Otras entidades
         for entidad in self.entidades:
             entidad.dibujar(self.manager.pantalla)
-        self.interfaz.manager.draw_ui(self.manager.pantalla)

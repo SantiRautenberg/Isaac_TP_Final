@@ -157,9 +157,10 @@ class Jugador(Base):
 
         # Sincronizamos los cambios de coordenadas con los gráficos del personaje
         self.actualizarAnimacion()
- 
+        
+        
     def dibujar(self, pantalla):
         pantalla.blit(self.sprite, (self.x, self.y))
 
-    def actualizar(self, pantalla, keys, mapa):
-        self.Moverse(keys, mapa)
+    def actualizar(self, pantalla, keys, mapa, *args):
+        self.moverse(keys, mapa)
