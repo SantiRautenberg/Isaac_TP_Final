@@ -29,19 +29,29 @@ class Jugador(Base):
             "DERECHA":   pygame.transform.scale(pygame.image.load(os.path.join(ruta_carpeta, "isaac_der.png")).convert_alpha(), self.dimensiones)
         }
 
-        # La animacion de movimiento se guarda en un archivo con los 4 frames
-        anim_caminar = pygame.image.load(os.path.join(ruta_carpeta, "isaac_caminando.png")).convert_alpha()
-        ancho_tira = anim_caminar.get_width()
-        alto_tira = anim_caminar.get_height()
-        ancho_cuadro = ancho_tira // 4  # Se divide en los 4 cuadros horizontales
-
-        self.animacion_caminando = []
+        # Inicialización de las listas de animación unificadas
+        self.animacion_horizontal = []
+        self.animacion_arriba = []
+        self.animacion_abajo = []
+        
+        # -------------------- CORRECCIÓN: CARGA INDIVIDUAL POR CARPETAS --------------------
+        # Recorremos del 0 al 3 para cargar secuencialmente cada frame independiente de las 3 carpetas
         for i in range(4):
-            # Recortamos cada frame de la tira horizontal
-            sub_cuadro = anim_caminar.subsurface((i * ancho_cuadro, 0, ancho_cuadro, alto_tira))
-            # Lo escalamos a nuestras dimensiones de juego y lo guardamos
-            self.animacion_caminando.append(pygame.transform.scale(sub_cuadro, self.dimensiones))
-
+            # 1. Carga de animación horizontal (Caminata Base)
+            ruta_frame_h = os.path.join(ruta_carpeta, "anim_base", f"{i}.png")
+            img_h = pygame.image.load(ruta_frame_h).convert_alpha()
+            self.animacion_horizontal.append(pygame.transform.scale(img_h, self.dimensiones))
+            
+            # 2. Carga de animación hacia arriba
+            ruta_frame_up = os.path.join(ruta_carpeta, "anim_arriba", f"{i}.png")
+            img_up = pygame.image.load(ruta_frame_up).convert_alpha()
+            self.animacion_arriba.append(pygame.transform.scale(img_up, self.dimensiones))
+            
+            # 3. Carga de animación hacia abajo
+            ruta_frame_down = os.path.join(ruta_carpeta, "anim_abajo", f"{i}.png")
+            img_down = pygame.image.load(ruta_frame_down).convert_alpha()
+            self.animacion_abajo.append(pygame.transform.scale(img_down, self.dimensiones))
+                
         # --- Variables de control para los estados y el tiempo ---
         self.direccion_actual = "ABAJO"
         self.esta_moviendose = False
@@ -57,20 +67,30 @@ class Jugador(Base):
         tiempo_actual = pygame.time.get_ticks()
 
         if self.esta_moviendose:
+            # Seleccionamos la lista de animación que corresponde según el estado de dirección
+            if self.direccion_actual in ["DERECHA", "IZQUIERDA"]:
+                animacion_activa = self.animacion_horizontal
+            elif self.direccion_actual == "ARRIBA":
+                animacion_activa = self.animacion_arriba
+            else:  # ABAJO
+                animacion_activa = self.animacion_abajo
+
+            # Control del reloj: Avanza el índice de la animación según la lista activa
             if tiempo_actual - self.tiempo_ultimo_frame > self.velocidad_animacion:
-                self.indice_animacion = (self.indice_animacion + 1) % len(self.animacion_caminando)
+                self.indice_animacion = (self.indice_animacion + 1) % len(animacion_activa)
                 self.tiempo_ultimo_frame = tiempo_actual
             
             # Se ejecuta en cada frame del juego 
-            self.sprite = self.animacion_caminando[self.indice_animacion]
+            self.sprite = animacion_activa[self.indice_animacion]
                 
-            # Si camina hacia la izquierda, invertimos horizontalmente el cuadro actual
-            if self.direccion_actual == "DERECHA": #ahora si camina a la derecha
+            # Como tu tira por defecto mira a la izquierda, aplicamos flip al ir a la DERECHA
+            if self.direccion_actual == "DERECHA":
                 self.sprite = pygame.transform.flip(self.sprite, True, False)
         else:
             # Si se queda quieto, vuelve al sprite estático de su dirección
             self.sprite = self.sprites_direcciones[self.direccion_actual]
-            self.rect = pygame.Rect(self.x, self.y, self.dimensiones[0], self.dimensiones[1])
+            
+        self.rect = pygame.Rect(self.x, self.y, self.dimensiones[0], self.dimensiones[1])
 
     # Encapsulamiento
 
@@ -90,51 +110,57 @@ class Jugador(Base):
 
     def moverse(self, keys, mapa):
         self.esta_moviendose = False
-
         dx = 0
         dy = 0
 
+        # 1. CAPTURA DE INTENCIÓN DE MOVIMIENTO
         if keys[pygame.K_a]:
             dx = -self.vel_movimiento
-            self.direccion_actual = "IZQUIERDA"
-            self.esta_moviendose = True
         elif keys[pygame.K_d]:
             dx = self.vel_movimiento
-            self.direccion_actual = "DERECHA"
-            self.esta_moviendose = True
 
         if keys[pygame.K_w]:
             dy = -self.vel_movimiento
-            self.direccion_actual = "ARRIBA"
-            self.esta_moviendose = True
         elif keys[pygame.K_s]:
             dy = self.vel_movimiento
-            self.direccion_actual = "ABAJO"
-            self.esta_moviendose = True
 
-        # Probar movimiento en X
+        # 2. PROCESAMIENTO LOGICO DE DIRECCIÓN Y ANIMACIÓN
+        if dx != 0 or dy != 0:
+            self.esta_moviendose = True
+       
+            # Lógica de control de prioridad para determinar la dirección visual de Isaac
+            if abs(dy) >= abs(dx) and dy != 0:
+                if dy < 0:
+                    self.direccion_actual = "ARRIBA"
+                else:
+                    self.direccion_actual = "ABAJO"
+            elif abs(dx) > abs(dy) and dx != 0:
+                if dx < 0:
+                    self.direccion_actual = "IZQUIERDA"
+                else:
+                    self.direccion_actual = "DERECHA"
+                        
+        # 3. PRUEBA DE COLISIONES Y ACTUALIZACIÓN DE COORDENADAS FISICAS
+        # Probar movimiento simulado en el eje X
         nuevo_rect = self.rect.copy()
         nuevo_rect.x += dx
-
         if not mapa.colision(nuevo_rect):
             self.x += dx
             self.rect.x = self.x
 
-        # Probar movimiento en Y
+        # Probar movimiento simulado en el eje Y
         nuevo_rect = self.rect.copy()
         nuevo_rect.y += dy
-
         if not mapa.colision(nuevo_rect):
             self.y += dy
             self.rect.y = self.y
 
+        # Sincronizamos los cambios de coordenadas con los gráficos del personaje
         self.actualizarAnimacion()
- 
+        
+        
     def dibujar(self, pantalla):
         pantalla.blit(self.sprite, (self.x, self.y))
 
-    def actualizar(self, pantalla, keys, mapa):
-        self.Moverse(keys, mapa)
-
-
-    
+    def actualizar(self, pantalla, keys, mapa, *args):
+        self.moverse(keys, mapa)
