@@ -4,7 +4,7 @@ import random
 import os
 
 from base import Base
-from enemigo import Enemigo
+from enemigo import Enemigo, EnemigoDisparador
 
 
 ANCHO_PANTALLA = 800
@@ -404,18 +404,21 @@ class Sala(Base):
         if self.trampilla is not None:
             self.trampilla.dibujar(pantalla)
 
-    def actualizar(self, pantalla, jugador=None):
+    def actualizar(self, pantalla, jugador=None, balas=None):
         for obstaculo in self.obstaculos:
             obstaculo.actualizar(pantalla)
 
         if jugador is not None:
             for enemigo in self.enemigos[:]:
-                enemigo.actualizar(jugador)
+
+                if enemigo.__class__.__name__ == "EnemigoDisparador":
+                    enemigo.actualizar(jugador, balas)
+                else:
+                    enemigo.actualizar(jugador)
 
                 if enemigo.vida <= 0:
                     self.enemigos.remove(enemigo)
 
-        # Si es sala boss y ya no quedan enemigos, aparece la trampilla abierta
         if self.tipo == "boss" and self.trampilla is not None:
             if len(self.enemigos) == 0:
                 self.trampilla.abrir()
@@ -618,9 +621,9 @@ class Piso(Base):
         if self.sala_actual is not None:
             self.sala_actual.dibujar(pantalla)
 
-    def actualizar(self, pantalla, jugador=None):
+    def actualizar(self, pantalla, jugador=None, balas=None):
         if self.sala_actual is not None:
-            self.sala_actual.actualizar(pantalla, jugador)
+            self.sala_actual.actualizar(pantalla, jugador, balas)
 
     def colision(self, rect_jugador):
         if self.sala_actual is not None:
@@ -692,9 +695,9 @@ class Mapa(Base):
         if self.piso_actual is not None:
             self.piso_actual.dibujar(pantalla)
 
-    def actualizar(self, pantalla, jugador=None):
+    def actualizar(self, pantalla, jugador=None, balas=None):
         if self.piso_actual is not None:
-            self.piso_actual.actualizar(pantalla, jugador)
+            self.piso_actual.actualizar(pantalla, jugador, balas)
 
     def colision(self, rect_jugador):
         if self.piso_actual is not None:
