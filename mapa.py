@@ -2,7 +2,7 @@
 import pygame
 import random
 from base import Base
-from enemigo import Enemigo
+from enemigo import Enemigo, EnemigoDisparador
 
 presets_salas_comunes = [
     {
@@ -13,7 +13,8 @@ presets_salas_comunes = [
         ],
         "enemigos": [
             (600, 150),
-            (600, 450)
+            (600, 450),
+            (600, 350)
         ]
     },
     {
@@ -24,7 +25,8 @@ presets_salas_comunes = [
         ],
         "enemigos": [
             (300, 150),
-            (500, 450)
+            (500, 450),
+            (300, 450)
         ]
     },
     {
@@ -37,7 +39,8 @@ presets_salas_comunes = [
         ],
         "enemigos": [
             (400, 180),
-            (400, 420)
+            (400, 420),
+            (400, 310)
         ]
     },
     {
@@ -45,7 +48,8 @@ presets_salas_comunes = [
         "obstaculos": [],
         "enemigos": [
             (250, 250),
-            (550, 350)
+            (550, 350),
+            (350, 150)
         ]
     }
 ]
@@ -90,9 +94,13 @@ class Mapa(Base):
         if self.piso_actual is not None:
             self.piso_actual.dibujar(pantalla)
 
-    def actualizar(self, pantalla, *args):
+    def actualizar(self, pantalla, jugador=None, lista_balas=None):
         if self.piso_actual is not None:
-            self.piso_actual.actualizar(pantalla, *args)
+          self.piso_actual.actualizar(
+            pantalla,
+            jugador,
+            lista_balas
+         )
 
     def colision(self, rect_jugador):
         if self.piso_actual is not None:
@@ -148,10 +156,16 @@ class Piso(Base):
                 Obstaculo(x, y, ancho, alto)
             )
 
-        for x, y in preset["enemigos"]:
-            sala.agregar_enemigo(
-                Enemigo(x, y)
-            )
+        for i, (x, y) in enumerate(preset["enemigos"]):
+
+            if i == 0:
+              sala.agregar_enemigo(
+              EnemigoDisparador(x, y)
+             )
+            else:
+              sala.agregar_enemigo(
+              Enemigo(x, y)
+             )
 
         return sala
     def cambiar_sala(self, nombre_sala):
@@ -162,9 +176,12 @@ class Piso(Base):
         if self.sala_actual is not None:
             self.sala_actual.dibujar(pantalla)
 
-    def actualizar(self, pantalla, jugador=None):
-        if self.sala_actual is not None:
-            self.sala_actual.actualizar(pantalla, jugador)
+    def actualizar(self, pantalla, jugador=None, lista_balas=None):
+        self.sala_actual.actualizar(
+             pantalla,
+             jugador,
+             lista_balas
+            )
 
     def colision(self, rect_jugador):
         if self.sala_actual is not None:
@@ -209,12 +226,13 @@ class Sala(Base):
         for enemigo in self.enemigos:
             enemigo.dibujar(pantalla)
 
-    def actualizar(self, pantalla, jugador=None):
-        for obstaculo in self.obstaculos:
-            obstaculo.actualizar(pantalla)
-
+    def actualizar(self, pantalla, jugador=None, lista_balas=None):
         if jugador is not None:
             for enemigo in self.enemigos:
+
+              if lista_balas is not None:
+                enemigo.actualizar(jugador, lista_balas)
+              else:
                 enemigo.actualizar(jugador)
 
     def colision(self, rect_jugador):

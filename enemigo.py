@@ -9,7 +9,7 @@ class Enemigo(Base):
         self.vida = vida
         self.daño = daño
         self.radio_colision = 20
-        self.cooldown_daño = 500  # milisegundos
+        self.cooldown_daño = 3000  # milisegundos
         self.ultimo_hit = 0
 
     def seguir_jugador(self, jugador):
@@ -45,3 +45,53 @@ class Enemigo(Base):
 
     
     
+from bala import Bala
+import pygame
+import math
+
+class EnemigoDisparador(Enemigo):
+
+    def __init__(self, x, y):
+        super().__init__(x, y, velocidad=5, vida=5, daño=1)
+
+        self.cooldown_disparo = 1500
+        self.ultimo_disparo = 0
+
+    def disparar(self, jugador, lista_balas):
+
+     tiempo_actual = pygame.time.get_ticks()
+
+     if tiempo_actual - self.ultimo_disparo > self.cooldown_disparo:
+
+        dx = jugador.x - self.x
+        dy = jugador.y - self.y
+
+        distancia = math.hypot(dx, dy)
+
+        if distancia != 0:
+            dx /= distancia
+            dy /= distancia
+
+            bala = Bala(
+                self.x,
+                self.y,
+                dx,
+                dy
+            )
+
+
+            lista_balas.append(bala)
+
+            self.ultimo_disparo = tiempo_actual
+
+    def actualizar(self, jugador, lista_balas):
+        self.colision_con_jugador(jugador)
+        self.disparar(jugador, lista_balas)
+
+    def dibujar(self, pantalla):
+        pygame.draw.circle(
+            pantalla,
+            (50, 50, 200),
+            (int(self.x), int(self.y)),
+            18
+        )

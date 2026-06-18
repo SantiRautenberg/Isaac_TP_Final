@@ -107,6 +107,8 @@ class Jugador(Base):
     
     def recibirDaño(self, valor):
         self.set_vida(valor)
+    
+        print("VIDA ACTUAL:", self.get_vida())
 
     def moverse(self, keys, mapa):
         self.esta_moviendose = False

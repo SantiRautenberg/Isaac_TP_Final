@@ -125,8 +125,7 @@ class EscenaJuego:
         self.balas = []
 
         # Ahora los enemigos pertenecen a cada sala del mapa.
-        # En entidades dejamos solo jugador y balas.
-        self.entidades = [self.jugador] + self.balas
+
         # --------------Variables de disparo para generar delay-----------------------------
         self.delay_disparo = 500
         self.ultimo_disparo = 0
@@ -190,7 +189,7 @@ class EscenaJuego:
         if keys[pygame.K_RIGHT] and tiempo_actual - self.ultimo_disparo > self.delay_disparo:
             bala = Bala(self.jugador.x + 50, self.jugador.y + 50, 1, 0)
             self.balas.append(bala)
-            self.entidades.append(bala)
+
             self.jugador.direccion_actual = "DERECHA"
             self.manager.audio_manager.reproducir_sfx("disparo")
             self.ultimo_disparo = tiempo_actual
@@ -198,7 +197,7 @@ class EscenaJuego:
         elif keys[pygame.K_LEFT] and tiempo_actual - self.ultimo_disparo > self.delay_disparo:
             bala = Bala(self.jugador.x + 50, self.jugador.y + 50, -1, 0)
             self.balas.append(bala)
-            self.entidades.append(bala)
+
             self.jugador.direccion_actual = "IZQUIERDA"
             self.manager.audio_manager.reproducir_sfx("disparo")
             self.ultimo_disparo = tiempo_actual
@@ -206,7 +205,7 @@ class EscenaJuego:
         elif keys[pygame.K_UP] and tiempo_actual - self.ultimo_disparo > self.delay_disparo:
             bala = Bala(self.jugador.x + 25, self.jugador.y, 0, -1)
             self.balas.append(bala)
-            self.entidades.append(bala)
+
             self.jugador.direccion_actual = "ARRIBA"
             self.manager.audio_manager.reproducir_sfx("disparo")
             self.ultimo_disparo = tiempo_actual
@@ -214,7 +213,7 @@ class EscenaJuego:
         elif keys[pygame.K_DOWN] and tiempo_actual - self.ultimo_disparo > self.delay_disparo:
             bala = Bala(self.jugador.x + 25, self.jugador.y + 50, 0, 1)
             self.balas.append(bala)
-            self.entidades.append(bala)
+
             self.jugador.direccion_actual = "ABAJO"
             self.manager.audio_manager.reproducir_sfx("disparo")
             self.ultimo_disparo = tiempo_actual
@@ -223,25 +222,41 @@ class EscenaJuego:
         self.jugador.actualizar(self.manager.pantalla, keys, self.mapa)
 
         # Actualizar mapa, obstáculos y enemigos de la sala actual
-        self.mapa.actualizar(self.manager.pantalla, self.jugador)
-
+        self.mapa.actualizar(
+            self.manager.pantalla,
+            self.jugador,
+            self.balas
+         )
+        
         # Actualizar balas
         for bala in self.balas[:]:
             bala.actualizar(self.manager.pantalla)
+            # Colisión con jugador
+            if bala.colision_jugador(self.jugador):
 
-            if bala.x < 0 or bala.x > 800 or bala.y < 0 or bala.y > 600:
+               if bala in self.balas:
                 self.balas.remove(bala)
 
-                if bala in self.entidades:
-                    self.entidades.remove(bala)
+               continue
+
+            # Eliminar fuera de pantalla
+            if bala.x < 0 or bala.x > 800 or bala.y < 0 or bala.y > 600:
+ 
+                if bala in self.balas:
+                 self.balas.remove(bala)
+
 
         # Revisar cambio de sala después de mover al jugador
         self.revisar_cambio_sala()
 
     def dibujar(self):
-        # Mapa
-        self.mapa.dibujar(self.manager.pantalla)
-        
-        # Otras entidades
-        for entidad in self.entidades:
-            entidad.dibujar(self.manager.pantalla)
+
+     # Dibujar mapa
+     self.mapa.dibujar(self.manager.pantalla)
+
+     # Dibujar jugador
+     self.jugador.dibujar(self.manager.pantalla)
+
+     # Dibujar balas
+     for bala in self.balas:
+        bala.dibujar(self.manager.pantalla)
