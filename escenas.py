@@ -6,7 +6,6 @@ import sys
 # Importar las clases desde sus respectivos archivos
 from personaje import Jugador
 from bala import Bala
-from enemigo import Enemigo
 from mapa import Mapa
 from interfaz import Interfaz
 
@@ -124,10 +123,10 @@ class EscenaJuego:
         self.jugador = Jugador("Isaac", 3, 5, 1, None, 100, 100, 100)
         self.mapa = Mapa()
         self.balas = []
-        # -------------------sets_de_enemigos-----------------------
-        self.enemigos = [Enemigo(400, 300), Enemigo(200, 150)]
-        # ------------------LISTA GENERAL---------------------------
-        self.entidades = [self.jugador] + self.enemigos + self.balas
+
+        # Ahora los enemigos pertenecen a cada sala del mapa.
+        # En entidades dejamos solo jugador y balas.
+        self.entidades = [self.jugador] + self.balas
         # --------------Variables de disparo para generar delay-----------------------------
         self.delay_disparo = 500
         self.ultimo_disparo = 0
@@ -169,18 +168,25 @@ class EscenaJuego:
 
     def actualizar(self, time_delta, tiempo_actual, keys):
         # =====================[TEST CAMBIO DE SALAS/PISOS]=====================
-        if keys[pygame.K_1]: self.mapa.cambiar_sala("comun_1")
-        if keys[pygame.K_2]: self.mapa.cambiar_sala("comun_2")
-        if keys[pygame.K_3]: self.mapa.cambiar_sala("tesoro")
-        if keys[pygame.K_4]: self.mapa.cambiar_sala("boss")
-        
+        if keys[pygame.K_1]:
+            self.mapa.cambiar_sala("comun_1")
+
+        if keys[pygame.K_2]:
+            self.mapa.cambiar_sala("comun_2")
+
+        if keys[pygame.K_3]:
+            self.mapa.cambiar_sala("tesoro")
+
+        if keys[pygame.K_4]:
+            self.mapa.cambiar_sala("boss")
+
         # Procesamos los eventos de la ventana
         for evento in pygame.event.get():
             if evento.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
-            
-        # =====================[sets_teclas_disparo]==========================================
+
+        # =====================[sets_teclas_disparo]==========================
         if keys[pygame.K_RIGHT] and tiempo_actual - self.ultimo_disparo > self.delay_disparo:
             bala = Bala(self.jugador.x + 50, self.jugador.y + 50, 1, 0)
             self.balas.append(bala)
@@ -213,23 +219,23 @@ class EscenaJuego:
             self.manager.audio_manager.reproducir_sfx("disparo")
             self.ultimo_disparo = tiempo_actual
 
-        self.mapa.actualizar(self.manager.pantalla)
-        # -------------------- CORRECCIÓN DE MOVIMIENTO DIRECTO --------------------
+        # Actualizar jugador
         self.jugador.actualizar(self.manager.pantalla, keys, self.mapa)
-        #-------------------- ACTUALIZA EL RESTO DE ENTIDADES --------------------
-        for entidad in self.entidades[:]:
-            if isinstance(entidad, Enemigo):
-                entidad.actualizar(self.jugador)
-            elif isinstance(entidad, Bala):
-                entidad.actualizar(self.manager.pantalla)
-                
-                # Limpieza de balas que salen de la pantalla
-                if entidad.x < 0 or entidad.x > 800 or entidad.y < 0 or entidad.y > 600:
-                    if entidad in self.balas:
-                        self.balas.remove(entidad)
-                    if entidad in self.entidades:
-                        self.entidades.remove(entidad)
 
+        # Actualizar mapa, obstáculos y enemigos de la sala actual
+        self.mapa.actualizar(self.manager.pantalla, self.jugador)
+
+        # Actualizar balas
+        for bala in self.balas[:]:
+            bala.actualizar(self.manager.pantalla)
+
+            if bala.x < 0 or bala.x > 800 or bala.y < 0 or bala.y > 600:
+                self.balas.remove(bala)
+
+                if bala in self.entidades:
+                    self.entidades.remove(bala)
+
+        # Revisar cambio de sala después de mover al jugador
         self.revisar_cambio_sala()
 
     def dibujar(self):

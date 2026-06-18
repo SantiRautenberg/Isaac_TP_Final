@@ -2,9 +2,52 @@
 import pygame
 import random
 from base import Base
+from enemigo import Enemigo
 
-preset_obstaculos = [
-    []
+presets_salas_comunes = [
+    {
+        "nombre": "bloques_centro",
+        "obstaculos": [
+            (200, 200, 100, 50),
+            (400, 300, 80, 80)
+        ],
+        "enemigos": [
+            (600, 150),
+            (600, 450)
+        ]
+    },
+    {
+        "nombre": "pasillo_horizontal",
+        "obstaculos": [
+            (180, 260, 160, 50),
+            (460, 260, 160, 50)
+        ],
+        "enemigos": [
+            (300, 150),
+            (500, 450)
+        ]
+    },
+    {
+        "nombre": "cuatro_piedras",
+        "obstaculos": [
+            (180, 160, 80, 80),
+            (540, 160, 80, 80),
+            (180, 360, 80, 80),
+            (540, 360, 80, 80)
+        ],
+        "enemigos": [
+            (400, 180),
+            (400, 420)
+        ]
+    },
+    {
+        "nombre": "sala_limpia_con_enemigos",
+        "obstaculos": [],
+        "enemigos": [
+            (250, 250),
+            (550, 350)
+        ]
+    }
 ]
 
 class Obstaculo(Base):
@@ -97,10 +140,20 @@ class Piso(Base):
 
     def crear_sala_comun(self, nombre):
         sala = Sala(nombre, tipo="comun", color_fondo=(35, 30, 35))
-        sala.agregar_obstaculo(Obstaculo(200, 200, 100, 50))
-        sala.agregar_obstaculo(Obstaculo(400, 300, 80, 80))
-        return sala
 
+        preset = random.choice(presets_salas_comunes)
+
+        for x, y, ancho, alto in preset["obstaculos"]:
+            sala.agregar_obstaculo(
+                Obstaculo(x, y, ancho, alto)
+            )
+
+        for x, y in preset["enemigos"]:
+            sala.agregar_enemigo(
+                Enemigo(x, y)
+            )
+
+        return sala
     def cambiar_sala(self, nombre_sala):
         if nombre_sala in self.salas:
             self.sala_actual = self.salas[nombre_sala]
@@ -109,9 +162,9 @@ class Piso(Base):
         if self.sala_actual is not None:
             self.sala_actual.dibujar(pantalla)
 
-    def actualizar(self, pantalla, *args):
+    def actualizar(self, pantalla, jugador=None):
         if self.sala_actual is not None:
-            self.sala_actual.actualizar(pantalla, *args)
+            self.sala_actual.actualizar(pantalla, jugador)
 
     def colision(self, rect_jugador):
         if self.sala_actual is not None:
@@ -135,14 +188,17 @@ class Sala(Base):
         self.tipo = tipo
         self.color_fondo = color_fondo
         self.obstaculos = []
+        self.enemigos = []
         self.conexiones = {}
-        
-        
+
     def conectar(self, direccion, nombre_sala):
         self.conexiones[direccion] = nombre_sala
 
     def agregar_obstaculo(self, obstaculo):
         self.obstaculos.append(obstaculo)
+
+    def agregar_enemigo(self, enemigo):
+        self.enemigos.append(enemigo)
 
     def dibujar(self, pantalla):
         pantalla.fill(self.color_fondo)
@@ -150,9 +206,16 @@ class Sala(Base):
         for obstaculo in self.obstaculos:
             obstaculo.dibujar(pantalla)
 
-    def actualizar(self, pantalla, *args):
+        for enemigo in self.enemigos:
+            enemigo.dibujar(pantalla)
+
+    def actualizar(self, pantalla, jugador=None):
         for obstaculo in self.obstaculos:
-            obstaculo.actualizar(pantalla, *args)
+            obstaculo.actualizar(pantalla)
+
+        if jugador is not None:
+            for enemigo in self.enemigos:
+                enemigo.actualizar(jugador)
 
     def colision(self, rect_jugador):
         for obstaculo in self.obstaculos:
