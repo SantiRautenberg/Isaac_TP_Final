@@ -1,19 +1,22 @@
 # personaje.py
 from base import Base # Importa clase abstracta
+from estadistica import Estadisticas
 import pygame
 import os
 
+inventario = {} # va a necesitar agregarle los items, probablemente no va acá !!!
 
 class Jugador(Base):
-    
-    def __init__(self, nombre, vida, vel_movimiento, daño, proyectil, rango, x, y):
+    #nombre, vida, vel_movimiento, daño, proyectil, rango,
+    def __init__(self, x, y):
         super().__init__(x, y)
-        self.nombre = nombre
-        self.__vida = vida
-        self.vel_movimiento = vel_movimiento
-        self.daño = daño
-        self.proyectil = proyectil
-        self.rango = rango
+        self.nombre = "Isaac"   # solo está Isaac, sino se pasa el nombre como argumento
+        self.__vida = 3
+        self.__vel_movimiento = 5
+        self.__daño = 1
+        self.proyectil = None
+        self.rango = 100
+        self.__vivo = True
 
         # Escalado uniforme para todos los sprites del personaje
         self.dimensiones = (75, 75)
@@ -92,23 +95,50 @@ class Jugador(Base):
             
         self.rect = pygame.Rect(self.x, self.y, self.dimensiones[0], self.dimensiones[1])
 
-    # Encapsulamiento
-
-    # Getter para stats
+    # ------------ Encapsulamiento ------------
+    # Getters para stats
     def get_vida(self):
         return self.__vida
     
-    # Setter con validación para recibirDaño
-    def set_vida(self, valor):
-        self.__vida -= valor
+    def get_velMovimiento(self):
+        return self.__vel_movimiento
+
+    def get_daño(self):
+        return self.__daño
+    
+    # Getter de estado del jugador (vivo o muerto)
+    def get_estado(self):
+        return self.__vivo
+    
+    # Setters con validación
+    def set_vida(self,valor):
+        self.__vida = valor
         if self.__vida<0:
             self.__vida=0
-        return self.__vida
+        if self.__vida==0:
+            self.morir()
+        #if self.__vida>=10:
+            # self.__vida=10
+            # acá no puede recoger más vidas (items)
+        
+    def set_velMovimiento(self,valor):
+        self.__vel_movimiento += valor #del item
+
+    def set_daño(self, valor):
+        self.__daño += valor #del item
     
-    def recibirDaño(self, valor):
-        self.set_vida(valor)
-    
-        print("VIDA ACTUAL:", self.get_vida())
+    # ------------ Métodos del personaje ------------
+    def curarse(self, corazon): #aca recibe al item
+        sumar_vida = self.__vida + corazon
+        self.set_vida(sumar_vida)
+
+    def recibirDaño(self, daño_recibido): #cómo lo recibe?
+        restar_vida = self.__vida - daño_recibido
+        self.set_vida(restar_vida)
+        Estadisticas.sumar_daño_recibido(daño_recibido)
+
+    def morir(self):
+        self.__vivo = False
 
     def moverse(self, keys, mapa):
         self.esta_moviendose = False
@@ -117,14 +147,14 @@ class Jugador(Base):
 
         # 1. CAPTURA DE INTENCIÓN DE MOVIMIENTO
         if keys[pygame.K_a]:
-            dx = -self.vel_movimiento
+            dx = -self.__vel_movimiento
         elif keys[pygame.K_d]:
-            dx = self.vel_movimiento
+            dx = self.__vel_movimiento
 
         if keys[pygame.K_w]:
-            dy = -self.vel_movimiento
+            dy = -self.__vel_movimiento
         elif keys[pygame.K_s]:
-            dy = self.vel_movimiento
+            dy = self.__vel_movimiento
 
         # 2. PROCESAMIENTO LOGICO DE DIRECCIÓN Y ANIMACIÓN
         if dx != 0 or dy != 0:
@@ -159,10 +189,11 @@ class Jugador(Base):
 
         # Sincronizamos los cambios de coordenadas con los gráficos del personaje
         self.actualizarAnimacion()
-        
-        
+
     def dibujar(self, pantalla):
         pantalla.blit(self.sprite, (self.x, self.y))
 
-    def actualizar(self, pantalla, keys, mapa, *args):
+    def actualizar(self, pantalla, keys, mapa):
         self.moverse(keys, mapa)
+        #self.recibirDaño()
+        #self.curarse() ??
