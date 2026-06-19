@@ -71,10 +71,6 @@ def recortar_a_contenido(superficie):
 
 
 def limpiar_sprite(superficie, tamanio_final, tolerancia=55):
-    """
-    Primero achica el sprite y después limpia fondo.
-    Así evitamos congelar el juego.
-    """
     superficie = superficie.convert_alpha()
 
     superficie = pygame.transform.scale(superficie, tamanio_final)
@@ -404,21 +400,18 @@ class Sala(Base):
         if self.trampilla is not None:
             self.trampilla.dibujar(pantalla)
 
-    def actualizar(self, pantalla, jugador=None, balas=None):
+    def actualizar(self, pantalla, jugador=None, lista_balas=None):
         for obstaculo in self.obstaculos:
             obstaculo.actualizar(pantalla)
 
         if jugador is not None:
             for enemigo in self.enemigos[:]:
-
-                if enemigo.__class__.__name__ == "EnemigoDisparador":
-                    enemigo.actualizar(jugador, balas)
-                else:
-                    enemigo.actualizar(jugador)
+                enemigo.actualizar(jugador, lista_balas)
 
                 if enemigo.vida <= 0:
                     self.enemigos.remove(enemigo)
 
+        # Si es sala boss y ya no quedan enemigos, aparece la trampilla abierta
         if self.tipo == "boss" and self.trampilla is not None:
             if len(self.enemigos) == 0:
                 self.trampilla.abrir()
@@ -455,7 +448,8 @@ presets_salas_comunes = [
             (430, 310, 120, 120),
         ],
         "enemigos": [
-            (600, 150),
+            (600, 150, "normal"),
+            (400, 350, "disparador"),
         ]
     },
     {
@@ -465,7 +459,7 @@ presets_salas_comunes = [
             (500, 300, 120, 120),
         ],
         "enemigos": [
-            (400, 250),
+            (400, 250, "disparador"),
         ]
     },
     {
@@ -475,19 +469,10 @@ presets_salas_comunes = [
             (500, 250, 120, 120),
         ],
         "enemigos": [
-            (400, 350),
+            (400, 350, "normal"),
+            (600, 180, "disparador"),
         ]
     },
-    {
-        "nombre": "sala_mas_libre",
-        "obstaculos": [
-            (260, 220, 120, 60),
-            (470, 330, 120, 60),
-        ],
-        "enemigos": [
-            (600, 300),
-        ]
-    }
 ]
 
 
@@ -585,10 +570,23 @@ class Piso(Base):
                 )
             )
 
-        for x, y in preset["enemigos"]:
-            sala.agregar_enemigo(
-                Enemigo(x, y)
-            )
+        for datos_enemigo in preset["enemigos"]:
+            x = datos_enemigo[0]
+            y = datos_enemigo[1]
+
+            tipo = "normal"
+
+            if len(datos_enemigo) >= 3:
+                tipo = datos_enemigo[2]
+
+            if tipo == "disparador":
+                sala.agregar_enemigo(
+                    EnemigoDisparador(x, y)
+                )
+            else:
+                sala.agregar_enemigo(
+                    Enemigo(x, y)
+                )
 
         return sala
 
