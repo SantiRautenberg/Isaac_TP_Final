@@ -175,18 +175,11 @@ class EscenaJuego:
 
     def actualizar(self, time_delta, tiempo_actual, keys):
         # =====================[TEST CAMBIO DE SALAS/PISOS]=====================
-        if keys[pygame.K_1]:
-            self.mapa.cambiar_sala("comun_1")
-
-        if keys[pygame.K_2]:
-            self.mapa.cambiar_sala("comun_2")
-
-        if keys[pygame.K_3]:
-            self.mapa.cambiar_sala("tesoro")
-
-        if keys[pygame.K_4]:
-            self.mapa.cambiar_sala("boss")
-
+        if keys[pygame.K_1]: self.mapa.cambiar_sala("comun_1")
+        if keys[pygame.K_2]: self.mapa.cambiar_sala("comun_2")
+        if keys[pygame.K_3]: self.mapa.cambiar_sala("tesoro")
+        if keys[pygame.K_4]: self.mapa.cambiar_sala("boss")
+        
         # Procesamos los eventos de la ventana
         for evento in pygame.event.get():
             if evento.type == pygame.QUIT:
