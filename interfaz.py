@@ -2,97 +2,153 @@
 import pygame
 import pygame_gui
 import os
+from estadistica import Estadisticas
 
 class Interfaz:
-    def __init__(self, resolucion, manager_ui, ruta_fuente):
+    def __init__(self, resolucion, manager_ui, ruta_fuente, alto_hud=85):
+        # ----------------- PARAMETRIZACIÓN INICIAL -----------------
         self.resolucion = resolucion
         self.ruta_fuente = ruta_fuente
-        
-        # Guardamos la referencia del manager único
         self.manager = manager_ui
+        self.alto_hud = alto_hud  
 
-        # Elementos de la interfaz que se guardarán como atributos
+        # Elementos del menú principal
         self.label_titulo = None
         self.boton_iniciar = None
-        self.boton_pruebas = None
         self.boton_salir = None
-        self.boton_volver = None
 
     def crear_menu_inicio(self):
-        # Genera los componentes del menu
         ancho_titulo, alto_titulo = 500, 100
         x_titulo = self.resolucion[0] // 2 - ancho_titulo // 2
         y_titulo = 60
         
-        # Cargamos la fuente para el renderizado del cartel
         if os.path.exists(self.ruta_fuente):
             fuente_titulo = pygame.font.Font(self.ruta_fuente, 30)
         else:
             fuente_titulo = pygame.font.SysFont("sans", 30, bold=True)
 
-        # Creamos una superficie transparente donde poner el fondo de la bandera
         superficie_cartel = pygame.Surface((ancho_titulo, alto_titulo), pygame.SRCALPHA)
-
-        # Dibujamos las tres franjas horizontales de la bandera (Celeste - Blanco - Celeste)
         pygame.draw.rect(superficie_cartel, (116, 172, 223), (0, 0, ancho_titulo, int(alto_titulo * 0.35)))
         pygame.draw.rect(superficie_cartel, (255, 255, 255), (0, int(alto_titulo * 0.35), ancho_titulo, int(alto_titulo * 0.30)))
         pygame.draw.rect(superficie_cartel, (116, 172, 223), (0, int(alto_titulo * 0.65), ancho_titulo, int(alto_titulo * 0.35)))
 
-        # Renderizado del texto del título centrado sobre la bandera
         texto_renderizado = fuente_titulo.render("ISAAC ARGENTO v0.1", True, (10, 20, 40))
         texto_rect = texto_renderizado.get_rect(center=(ancho_titulo // 2, alto_titulo // 2))
         superficie_cartel.blit(texto_renderizado, texto_rect)
 
-        # Configurado todo, se pasa al manager de UI
         self.label_titulo = pygame_gui.elements.UIImage(
             relative_rect=pygame.Rect((x_titulo, y_titulo), (ancho_titulo, alto_titulo)),
             image_surface=superficie_cartel,
             manager=self.manager
         )
 
-        # Botones principales del menú
         self.boton_iniciar = pygame_gui.elements.UIButton(
-            relative_rect=pygame.Rect((self.resolucion[0] // 2 - 120, 230), (240, 50)),
+            relative_rect=pygame.Rect((self.resolucion[0] // 2 - 120, 240), (240, 50)),
             text="JUGAR",
             manager=self.manager
         )
 
-        self.boton_pruebas = pygame_gui.elements.UIButton(
-            relative_rect=pygame.Rect((self.resolucion[0] // 2 - 120, 300), (240, 50)),
-            text="ENTORNO PRUEBAS HUD",
-            manager=self.manager
-        )
-
         self.boton_salir = pygame_gui.elements.UIButton(
-            relative_rect=pygame.Rect((self.resolucion[0] // 2 - 120, 370), (240, 50)),
+            relative_rect=pygame.Rect((self.resolucion[0] // 2 - 120, 320), (240, 50)),
             text="SALIR",
             manager=self.manager
         )
 
     def destruir_menu_inicio(self):
-        """Elimina de forma segura los widgets del menú de la memoria del manager."""
         if self.label_titulo: self.label_titulo.kill()
         if self.boton_iniciar: self.boton_iniciar.kill()
-        if self.boton_pruebas: self.boton_pruebas.kill()
         if self.boton_salir: self.boton_salir.kill()
 
-    def crear_entorno_pruebas(self):
-        self.boton_volver = pygame_gui.elements.UIButton(
-            relative_rect=pygame.Rect((self.resolucion[0] - 160, self.resolucion[1] - 60), (140, 40)),
-            text="VOLVER AL MENÚ",
-            manager=self.manager
-        )
+    def dibujar_hud_juego(self, pantalla, jugador, mapa):
+        pygame.draw.rect(pantalla, (15, 15, 20), (0, 0, self.resolucion[0], self.alto_hud))
+        pygame.draw.rect(pantalla, (60, 60, 65), (0, self.alto_hud - 2, self.resolucion[0], 2))
 
-    def dibujar_prototipo_hud(self, pantalla):
-        # Contenedor gris del HUD superior
-        pygame.draw.rect(pantalla, (20, 20, 25), (0, 0, self.resolucion[0], 60))
-        
-        # Prototipo de corazones de vida (3 círculos rojos de prueba)
-        for i in range(3):
-            pygame.draw.circle(pantalla, (220, 40, 40), (30 + (i * 35), 30), 12)
+        # Vida del jugador (1 punto = medio corazon)
+        vida_actual = jugador.get_vida()
+        max_contenedores = 3  # Capacidad máxima de corazones
+        pos_x_corazon = 50
+        pos_y_corazon = self.alto_hud // 2 - 5
+
+        for i in range(max_contenedores):
+            limite_vida_corazon = (i + 1) * 2
             
-        # Contador de monedas provisionales
+            if vida_actual >= limite_vida_corazon:
+                # CORAZON ENTERO
+                pygame.draw.circle(pantalla, (220, 40, 40), (pos_x_corazon, pos_y_corazon), 8)
+                pygame.draw.circle(pantalla, (220, 40, 40), (pos_x_corazon + 10, pos_y_corazon), 8)
+                pygame.draw.polygon(pantalla, (220, 40, 40), [(pos_x_corazon - 8, pos_y_corazon + 2), (pos_x_corazon + 18, pos_y_corazon + 2), (pos_x_corazon + 5, pos_y_corazon + 14)])
+            
+            elif vida_actual == limite_vida_corazon - 1:
+                # MEDIO CORAZON 
+                pygame.draw.circle(pantalla, (220, 40, 40), (pos_x_corazon, pos_y_corazon), 8)
+                pygame.draw.polygon(pantalla, (220, 40, 40), [(pos_x_corazon - 8, pos_y_corazon + 2), (pos_x_corazon + 5, pos_y_corazon + 2), (pos_x_corazon + 5, pos_y_corazon + 14)])
+                pygame.draw.circle(pantalla, (40, 40, 45), (pos_x_corazon + 10, pos_y_corazon), 8)
+                pygame.draw.circle(pantalla, (140, 40, 40), (pos_x_corazon + 10, pos_y_corazon), 8, 1)
+            
+            else:
+                # CORAZÓN COMPLETAMENTE VACÍO 
+                pygame.draw.circle(pantalla, (30, 30, 35), (pos_x_corazon, pos_y_corazon), 8)
+                pygame.draw.circle(pantalla, (30, 30, 35), (pos_x_corazon + 10, pos_y_corazon), 8)
+                pygame.draw.polygon(pantalla, (30, 30, 35), [(pos_x_corazon - 8, pos_y_corazon + 2), (pos_x_corazon + 18, pos_y_corazon + 2), (pos_x_corazon + 5, pos_y_corazon + 14)])
+                pygame.draw.circle(pantalla, (150, 40, 40), (pos_x_corazon, pos_y_corazon), 8, 1)
+                pygame.draw.circle(pantalla, (150, 40, 40), (pos_x_corazon + 10, pos_y_corazon), 8, 1)
+
+            pos_x_corazon += 35
+
+        # Dibujamos el score en tiempo real
         if os.path.exists(self.ruta_fuente):
-            fuente_hud = pygame.font.Font(self.ruta_fuente, 18)
-            texto_monedas = fuente_hud.render("MONEDAS: 99", True, (255, 215, 0))
-            pantalla.blit(texto_monedas, (150, 20))
+            fuente_hud = pygame.font.Font(self.ruta_fuente, 16)
+        else:
+            fuente_hud = pygame.font.SysFont("sans", 16, bold=True)
+            
+        texto_score = fuente_hud.render(f"PUNTAJE: {Estadisticas.puntaje_final}", True, (240, 240, 245))
+        pantalla.blit(texto_score, (260, self.alto_hud // 2 - 10))
+
+        # Dibujamos el minimapa
+        start_x = self.resolucion[0] - 195
+        start_y = 16
+        
+        posiciones_mapa_fijo = {
+            "comun_1": (0, 0), "comun_2": (1, 0), "tesoro": (2, 0),
+            "comun_3": (0, 1), "comun_4": (1, 1), "boss": (2, 1)
+        }
+
+        piso_actual = mapa.piso_actual
+        if piso_actual and hasattr(piso_actual, 'salas'):
+            # Dibujamos las lineas que conectan las salas
+            for nombre_sala, sala in piso_actual.salas.items():
+                if nombre_sala in posiciones_mapa_fijo:
+                    gx, gy = posiciones_mapa_fijo[nombre_sala]
+                    centro_origen_x = start_x + (gx * 38) + 13
+                    centro_origen_y = start_y + (gy * 28) + 9
+
+                    for direccion, destino in sala.conexiones.items():
+                        if destino in posiciones_mapa_fijo:
+                            dgx, dgy = posiciones_mapa_fijo[destino]
+                            centro_destino_x = start_x + (dgx * 38) + 13
+                            centro_destino_y = start_y + (dgy * 28) + 9
+                            # Dibujamos la línea de conexión grisácea por debajo de las habitaciones
+                            pygame.draw.line(pantalla, (90, 90, 95), (centro_origen_x, centro_origen_y), (centro_destino_x, centro_destino_y), 3)
+
+            # Dibuja cada sala en el minimapa
+            for nombre_sala, sala in piso_actual.salas.items():
+                if nombre_sala in posiciones_mapa_fijo:
+                    grid_x, grid_y = posiciones_mapa_fijo[nombre_sala]
+                    bx = start_x + (grid_x * 38)
+                    by = start_y + (grid_y * 28)
+
+                    # Color de la sala segun tipo
+                    if sala.tipo == "tesoro":
+                        color_bloque = (212, 175, 55) # Dorado
+                    elif sala.tipo == "boss":
+                        color_bloque = (180, 30, 30)  # Rojo
+                    else:
+                        color_bloque = (65, 65, 70)   # Gris
+
+                    # Resaltamos de blanco la ubicación donde está parado Isaac 
+                    if piso_actual.sala_actual and piso_actual.sala_actual.nombre == nombre_sala:
+                        color_bloque = (245, 245, 250)
+
+                    # Dibujo de la habitacion 
+                    pygame.draw.rect(pantalla, color_bloque, (bx, by, 26, 19))
+                    pygame.draw.rect(pantalla, (10, 10, 15), (bx, by, 26, 19), 1)
