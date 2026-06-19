@@ -6,8 +6,10 @@ import sys
 # Importar las clases desde sus respectivos archivos
 from personaje import Jugador
 from bala import Bala
+from enemigo import Enemigo # agregar las otras clases de enemigos y el generador
 from mapa import Mapa
 from interfaz import Interfaz
+from estadistica import Estadisticas
 
 class SceneManager:
     
@@ -113,20 +115,22 @@ class EntornoPruebas:
         self.interfaz.dibujar_prototipo_hud(self.manager.pantalla)
         self.interfaz.manager.draw_ui(self.manager.pantalla)
 
-
 # =====================[ESCENA: PARTIDA JUGABLE]======================================
 class EscenaJuego:
     
     def __init__(self, manager_escenas):
         self.manager = manager_escenas
-        # ----------------sets_del_personaje------------------------
-        self.jugador = Jugador("Isaac", 3, 5, 1, None, 100, 100, 100)
+
+        self.jugador = Jugador(100, 100)
         self.mapa = Mapa()
+
+        # Las balas sí las maneja EscenaJuego
         self.balas = []
 
-        # Ahora los enemigos pertenecen a cada sala del mapa.
+        # En entidades dejamos solamente al jugador.
+        # Los enemigos los maneja el mapa.
+        self.entidades = [self.jugador]
 
-        # --------------Variables de disparo para generar delay-----------------------------
         self.delay_disparo = 500
         self.ultimo_disparo = 0
 
@@ -142,6 +146,7 @@ class EscenaJuego:
                 self.jugador.x = ancho_pantalla - self.jugador.dimensiones[0] - margen
             else:
                 self.jugador.x = 0
+
             self.jugador.rect.x = self.jugador.x
 
         elif self.jugador.rect.right >= ancho_pantalla:
@@ -149,6 +154,7 @@ class EscenaJuego:
                 self.jugador.x = margen
             else:
                 self.jugador.x = ancho_pantalla - self.jugador.dimensiones[0]
+
             self.jugador.rect.x = self.jugador.x
 
         elif self.jugador.rect.top <= 0:
@@ -156,6 +162,7 @@ class EscenaJuego:
                 self.jugador.y = alto_pantalla - self.jugador.dimensiones[1] - margen
             else:
                 self.jugador.y = 0
+
             self.jugador.rect.y = self.jugador.y
 
         elif self.jugador.rect.bottom >= alto_pantalla:
@@ -163,100 +170,112 @@ class EscenaJuego:
                 self.jugador.y = margen
             else:
                 self.jugador.y = alto_pantalla - self.jugador.dimensiones[1]
+
             self.jugador.rect.y = self.jugador.y
 
     def actualizar(self, time_delta, tiempo_actual, keys):
         # =====================[TEST CAMBIO DE SALAS/PISOS]=====================
-        if keys[pygame.K_1]:
-            self.mapa.cambiar_sala("comun_1")
-
-        if keys[pygame.K_2]:
-            self.mapa.cambiar_sala("comun_2")
-
-        if keys[pygame.K_3]:
-            self.mapa.cambiar_sala("tesoro")
-
-        if keys[pygame.K_4]:
-            self.mapa.cambiar_sala("boss")
-
+        if keys[pygame.K_1]: self.mapa.cambiar_sala("comun_1")
+        if keys[pygame.K_2]: self.mapa.cambiar_sala("comun_2")
+        if keys[pygame.K_3]: self.mapa.cambiar_sala("tesoro")
+        if keys[pygame.K_4]: self.mapa.cambiar_sala("boss")
+        
         # Procesamos los eventos de la ventana
         for evento in pygame.event.get():
             if evento.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
 
-        # =====================[sets_teclas_disparo]==========================
+        # =====================[DISPARO DEL JUGADOR]=====================
         if keys[pygame.K_RIGHT] and tiempo_actual - self.ultimo_disparo > self.delay_disparo:
-            bala = Bala(self.jugador.x + 50, self.jugador.y + 50, 1, 0)
-            self.balas.append(bala)
+            bala = Bala(
+                self.jugador.x + 50,
+                self.jugador.y + 50,
+                1,
+                0,
+                daño=self.jugador.get_daño()
+            )
 
+            self.balas.append(bala)
             self.jugador.direccion_actual = "DERECHA"
             self.manager.audio_manager.reproducir_sfx("disparo")
             self.ultimo_disparo = tiempo_actual
 
         elif keys[pygame.K_LEFT] and tiempo_actual - self.ultimo_disparo > self.delay_disparo:
-            bala = Bala(self.jugador.x + 50, self.jugador.y + 50, -1, 0)
-            self.balas.append(bala)
+            bala = Bala(
+                self.jugador.x + 50,
+                self.jugador.y + 50,
+                -1,
+                0,
+                daño=self.jugador.get_daño()
+            )
 
+            self.balas.append(bala)
             self.jugador.direccion_actual = "IZQUIERDA"
             self.manager.audio_manager.reproducir_sfx("disparo")
             self.ultimo_disparo = tiempo_actual
 
         elif keys[pygame.K_UP] and tiempo_actual - self.ultimo_disparo > self.delay_disparo:
-            bala = Bala(self.jugador.x + 25, self.jugador.y, 0, -1)
-            self.balas.append(bala)
+            bala = Bala(
+                self.jugador.x + 25,
+                self.jugador.y,
+                0,
+                -1,
+                daño=self.jugador.get_daño()
+            )
 
+            self.balas.append(bala)
             self.jugador.direccion_actual = "ARRIBA"
             self.manager.audio_manager.reproducir_sfx("disparo")
             self.ultimo_disparo = tiempo_actual
 
         elif keys[pygame.K_DOWN] and tiempo_actual - self.ultimo_disparo > self.delay_disparo:
-            bala = Bala(self.jugador.x + 25, self.jugador.y + 50, 0, 1)
-            self.balas.append(bala)
+            bala = Bala(
+                self.jugador.x + 25,
+                self.jugador.y + 50,
+                0,
+                1,
+                daño=self.jugador.get_daño()
+            )
 
+            self.balas.append(bala)
             self.jugador.direccion_actual = "ABAJO"
             self.manager.audio_manager.reproducir_sfx("disparo")
             self.ultimo_disparo = tiempo_actual
 
-        # Actualizar jugador
-        self.jugador.actualizar(self.manager.pantalla, keys, self.mapa)
+        # =====================[ACTUALIZAR JUGADOR]=====================
+        self.jugador.actualizar(
+            self.manager.pantalla,
+            keys,
+            self.mapa
+        )
 
-        # Actualizar mapa, obstáculos y enemigos de la sala actual
+        # =====================[ACTUALIZAR MAPA Y ENEMIGOS]=====================
+        # El mapa actualiza obstáculos, enemigos y enemigos disparadores.
+        # Le pasamos balas para que el mapa pueda chequear colisiones o agregar disparos.
         self.mapa.actualizar(
             self.manager.pantalla,
             self.jugador,
             self.balas
-         )
-        
-        # Actualizar balas
+        )
+
+        # =====================[ACTUALIZAR BALAS]=====================
         for bala in self.balas[:]:
             bala.actualizar(self.manager.pantalla)
-            # Colisión con jugador
-            if bala.colision_jugador(self.jugador):
 
-               if bala in self.balas:
-                self.balas.remove(bala)
-
-               continue
-
-            # Eliminar fuera de pantalla
             if bala.x < 0 or bala.x > 800 or bala.y < 0 or bala.y > 600:
- 
-                if bala in self.balas:
-                 self.balas.remove(bala)
-
+                self.balas.remove(bala)
 
         # Revisar cambio de sala después de mover al jugador
         self.revisar_cambio_sala()
 
     def dibujar(self):
+        # El mapa dibuja fondo, obstáculos, enemigos y trampilla
+        self.mapa.dibujar(self.manager.pantalla)
 
-     # Dibujar mapa
-     self.mapa.dibujar(self.manager.pantalla)
+        # Dibujar jugador
+        self.jugador.dibujar(self.manager.pantalla)
 
-     # Dibujar jugador
-     self.jugador.dibujar(self.manager.pantalla)
-
-     # Dibujar balas
-     for bala in self.balas:
-        bala.dibujar(self.manager.pantalla)
+        # Dibujar balas
+        for bala in self.balas:
+            bala.dibujar(self.manager.pantalla)
