@@ -17,12 +17,6 @@ class Interfaz:
         self.boton_iniciar = None
         self.boton_salir = None
 
-        # Elementos de la pantalla de fin del juego
-        self.label_placeholder = None
-        self.label_puntaje = None
-        self.boton_reiniciar = None
-        self.boton_salir_fin = None
-
     def crear_menu_inicio(self):
         ancho_titulo, alto_titulo = 500, 100
         x_titulo = self.resolucion[0] // 2 - ancho_titulo // 2
@@ -150,39 +144,3 @@ class Interfaz:
 
                     pygame.draw.rect(pantalla, color_bloque, (bx, by, 26, 19))
                     pygame.draw.rect(pantalla, (10, 10, 15), (bx, by, 26, 19), 1)
-
-    def crear_pantalla_fin(self):
-        self.label_placeholder = pygame_gui.elements.UILabel(
-            relative_rect=pygame.Rect((self.resolucion[0] // 2 - 200, 180), (400, 60)),
-            text="Fin del juego, has muerto.....",
-            manager=self.manager
-        )
-
-        self.label_puntaje = pygame_gui.elements.UILabel(
-            relative_rect=pygame.Rect((self.resolucion[0] // 2 - 200, 260), (400, 40)),
-            text=f"PUNTAJE FINAL: {Estadisticas.puntaje_final}",
-            manager=self.manager
-        )
-
-        ancho_btn = 240
-        alto_btn = 50
-        y_pos_btn = 360
-        espaciado = 20
-
-        self.boton_reiniciar = pygame_gui.elements.UIButton(
-            relative_rect=pygame.Rect((self.resolucion[0] // 2 - ancho_btn - espaciado // 2, y_pos_btn), (ancho_btn, alto_btn)),
-            text="Jugar nuevamente",
-            manager=self.manager
-        )
-
-        self.boton_salir_fin = pygame_gui.elements.UIButton(
-            relative_rect=pygame.Rect((self.resolucion[0] // 2 + espaciado // 2, y_pos_btn), (ancho_btn, alto_btn)),
-            text="Salir del juego",
-            manager=self.manager
-        )
-
-    def destruir_pantalla_fin(self):
-        if self.label_placeholder: self.label_placeholder.kill()
-        if self.label_puntaje: self.label_puntaje.kill()
-        if self.boton_reiniciar: self.boton_reiniciar.kill()
-        if self.boton_salir_fin: self.boton_salir_fin.kill()

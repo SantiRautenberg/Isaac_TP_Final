@@ -120,7 +120,6 @@ class EscenaJuego:
             self.jugador.rect.y = self.jugador.y
 
     def actualizar(self, time_delta, tiempo_actual, keys):
-        # Si Isaac se queda sin salud, salta a la pantalla de Game Over
         if self.jugador.get_vida() <= 0:
             self.manager.cambiar_escena(EscenaFinJuego(self.manager))
             return
@@ -191,12 +190,16 @@ class EscenaJuego:
 class EscenaFinJuego:
     def __init__(self, manager_escenas):
         self.manager = manager_escenas
-        self.interfaz = None
+        self.fondo_endgame = None
+        self.rect_btn_reiniciar = pygame.Rect(0, 0, 0, 0)
+        self.rect_btn_salir = pygame.Rect(0, 0, 0, 0)
 
     def inicializar(self):
-        self.interfaz = Interfaz(self.manager.resolucion, self.manager.ui_manager, self.manager.ruta_fuente, self.manager.alto_hud)
-        self.interfaz.crear_pantalla_fin()
         self.manager.audio_manager.detener_musica()
+        # NUEVA RUTA SOLICITADA: imagenes -> menu -> endgame screen.png
+        ruta_img = os.path.join(os.path.dirname(__file__), "imagenes", "menu", "endgame screen.png")
+        if os.path.exists(ruta_img):
+            self.fondo_endgame = pygame.image.load(ruta_img).convert_alpha()
 
     def actualizar(self, time_delta, tiempo_actual, keys):
         for evento in pygame.event.get():
@@ -204,21 +207,59 @@ class EscenaFinJuego:
                 pygame.quit()
                 sys.exit()
 
-            if evento.type == pygame.USEREVENT and hasattr(evento, 'user_type') and evento.user_type == pygame_gui.UI_BUTTON_PRESSED:
-                try:
-                    if evento.ui_element == self.interfaz.boton_reiniciar:
-                        self.interfaz.destruir_pantalla_fin()
-                        self.manager.cambiar_escena(EscenaJuego(self.manager))
-
-                    elif evento.ui_element == self.interfaz.boton_salir_fin:
-                        pygame.quit()
-                        sys.exit()
-                except AttributeError:
-                    pass
-
-            self.interfaz.manager.process_events(evento)
-        self.interfaz.manager.update(time_delta)
+            if evento.type == pygame.MOUSEBUTTONDOWN and evento.button == 1:
+                pos_mouse = pygame.mouse.get_pos()
+                if self.rect_btn_reiniciar.collidepoint(pos_mouse):
+                    self.manager.cambiar_escena(EscenaJuego(self.manager))
+                    return
+                elif self.rect_btn_salir.collidepoint(pos_mouse):
+                    pygame.quit()
+                    sys.exit()
 
     def dibujar(self):
-        self.manager.pantalla.fill((20, 10, 10))
-        self.interfaz.manager.draw_ui(self.manager.pantalla)
+        self.manager.pantalla.fill((20, 15, 15))
+        y_offset = (self.manager.resolucion[1] - 600) // 2
+
+        if self.fondo_endgame:
+            self.manager.pantalla.blit(self.fondo_endgame, (0, y_offset))
+
+        if os.path.exists(self.manager.ruta_fuente):
+            fuente_fin = pygame.font.Font(self.manager.ruta_fuente, 20)
+        else:
+            fuente_fin = pygame.font.SysFont("sans", 20, bold=True)
+
+        # Renderizamos e inclinamos 6° horarios (-6) el valor numérico del puntaje al lado de la palabra
+        surf_puntos = fuente_fin.render(str(Estadisticas.puntaje_final), True, (75, 75, 75))
+        surf_puntos_rotada = pygame.transform.rotate(surf_puntos, -6)
+        self.manager.pantalla.blit(surf_puntos_rotada, (380, y_offset + 410))
+
+        # Construcción de los botones interactivos e inclinados a -6°
+        ancho_b, alto_b = 210, 45
+
+        # Botón izquierdo: Jugar nuevamente
+        surf_btn1 = pygame.Surface((ancho_b, alto_b), pygame.SRCALPHA)
+        pygame.draw.rect(surf_btn1, (116, 172, 223), (0, 0, ancho_b, alto_b), border_radius=4)
+        pygame.draw.rect(surf_btn1, (255, 255, 255), (0, 0, ancho_b, alto_b), 2, border_radius=4)
+        texto_btn1 = fuente_fin.render("Jugar nuevamente", True, (10, 20, 40))
+        surf_btn1.blit(texto_btn1, texto_btn1.get_rect(center=(ancho_b // 2, alto_b // 2)))
+
+        # Botón derecho: Salir del juego
+        surf_btn2 = pygame.Surface((ancho_b, alto_b), pygame.SRCALPHA)
+        pygame.draw.rect(surf_btn2, (116, 172, 223), (0, 0, ancho_b, alto_b), border_radius=4)
+        pygame.draw.rect(surf_btn2, (255, 255, 255), (0, 0, ancho_b, alto_b), 2, border_radius=4)
+        texto_btn2 = fuente_fin.render("Salir del juego", True, (10, 20, 40))
+        surf_btn2.blit(texto_btn2, texto_btn2.get_rect(center=(ancho_b // 2, alto_b // 2)))
+
+        surf_btn1_rotado = pygame.transform.rotate(surf_btn1, -6)
+        surf_btn2_rotado = pygame.transform.rotate(surf_btn2, -6)
+
+        # Posicionamiento calibrado según la pendiente de la hoja arrugada
+        pos_b1_x, pos_b1_y = 175, y_offset + 490
+        pos_b2_x, pos_b2_y = 415, y_offset + 515
+
+        # Almacenamos las hitboxes rotadas expandidas para colisiones perfectas de mouse
+        self.rect_btn_reiniciar = surf_btn1_rotado.get_rect(topleft=(pos_b1_x, pos_b1_y))
+        self.rect_btn_salir = surf_btn2_rotado.get_rect(topleft=(pos_b2_x, pos_b2_y))
+
+        self.manager.pantalla.blit(surf_btn1_rotado, (pos_b1_x, pos_b1_y))
+        self.manager.pantalla.blit(surf_btn2_rotado, (pos_b2_x, pos_b2_y))
