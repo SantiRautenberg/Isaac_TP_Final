@@ -17,47 +17,11 @@ class Interfaz:
         self.boton_iniciar = None
         self.boton_salir = None
 
-    def crear_menu_inicio(self):
-        ancho_titulo, alto_titulo = 500, 100
-        x_titulo = self.resolucion[0] // 2 - ancho_titulo // 2
-        y_titulo = 60
-
-        if os.path.exists(self.ruta_fuente):
-            fuente_titulo = pygame.font.Font(self.ruta_fuente, 30)
-        else:
-            fuente_titulo = pygame.font.SysFont("sans", 30, bold=True)
-
-        superficie_cartel = pygame.Surface((ancho_titulo, alto_titulo), pygame.SRCALPHA)
-        pygame.draw.rect(superficie_cartel, (116, 172, 223), (0, 0, ancho_titulo, int(alto_titulo * 0.35)))
-        pygame.draw.rect(superficie_cartel, (255, 255, 255), (0, int(alto_titulo * 0.35), ancho_titulo, int(alto_titulo * 0.30)))
-        pygame.draw.rect(superficie_cartel, (116, 172, 223), (0, int(alto_titulo * 0.65), ancho_titulo, int(alto_titulo * 0.35)))
-
-        texto_renderizado = fuente_titulo.render("ISAAC ARGENTO v0.1", True, (10, 20, 40))
-        texto_rect = texto_renderizado.get_rect(center=(ancho_titulo // 2, alto_titulo // 2))
-        superficie_cartel.blit(texto_renderizado, texto_rect)
-
-        self.label_titulo = pygame_gui.elements.UIImage(
-            relative_rect=pygame.Rect((x_titulo, y_titulo), (ancho_titulo, alto_titulo)),
-            image_surface=superficie_cartel,
-            manager=self.manager
-        )
-
-        self.boton_iniciar = pygame_gui.elements.UIButton(
-            relative_rect=pygame.Rect((self.resolucion[0] // 2 - 120, 240), (240, 50)),
-            text="JUGAR",
-            manager=self.manager
-        )
-
-        self.boton_salir = pygame_gui.elements.UIButton(
-            relative_rect=pygame.Rect((self.resolucion[0] // 2 - 120, 320), (240, 50)),
-            text="SALIR",
-            manager=self.manager
-        )
-
-    def destruir_menu_inicio(self):
-        if self.label_titulo: self.label_titulo.kill()
-        if self.boton_iniciar: self.boton_iniciar.kill()
-        if self.boton_salir: self.boton_salir.kill()
+        # Elementos de la pantalla de fin del juego
+        self.label_placeholder = None
+        self.label_puntaje = None
+        self.boton_reiniciar = None
+        self.boton_salir_fin = None
 
     def dibujar_hud_juego(self, pantalla, jugador, mapa):
         # Base del HUD
@@ -144,3 +108,4 @@ class Interfaz:
 
                     pygame.draw.rect(pantalla, color_bloque, (bx, by, 26, 19))
                     pygame.draw.rect(pantalla, (10, 10, 15), (bx, by, 26, 19), 1)
+                    

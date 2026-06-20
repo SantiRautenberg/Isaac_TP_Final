@@ -113,9 +113,9 @@ class Jugador(Base):
             self.__vida=0
         if self.__vida==0:
             self.morir()
-        #if self.__vida>=10:
-            # self.__vida=10
-            # acá no puede recoger más vidas (items)
+        if self.__vida>=10:
+            self.__vida=10
+            # Acá no puede recoger más vidas (items)
         
     def set_velMovimiento(self,valor):
         self.__vel_movimiento += valor 

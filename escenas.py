@@ -9,6 +9,13 @@ from mapa import Mapa
 from interfaz import Interfaz
 from estadistica import Estadisticas
 
+# Variables de colores 
+color_boton = (236, 220, 220)
+color_boton_borde = (140, 124, 128)
+color_texto = (92, 44, 52)
+color_fondo = (20, 15, 15)
+color_interaccion_boton = (195, 189, 180)
+
 class SceneManager:
     def __init__(self, pantalla, resolucion, audio_manager, ui_manager, ruta_themes, ruta_fuente, alto_hud=75):
         self.pantalla = pantalla
@@ -37,12 +44,15 @@ class SceneManager:
 class EscenaMenu:
     def __init__(self, manager_escenas):
         self.manager = manager_escenas
-        self.interfaz = None
+        self.fondo_menu = None
+        self.rect_btn_iniciar = pygame.Rect(0, 0, 0, 0)
+        self.rect_btn_salir = pygame.Rect(0, 0, 0, 0)
 
     def inicializar(self):
-        self.interfaz = Interfaz(self.manager.resolucion, self.manager.ui_manager, self.manager.ruta_fuente, self.manager.alto_hud)
-        self.interfaz.crear_menu_inicio()
         self.manager.audio_manager.reproducir_musica("musica_menu.mp3", volumen=0.2)
+        ruta_img = os.path.join(os.path.dirname(__file__), "imagenes", "menu", "menu_inicial.png")
+        if os.path.exists(ruta_img):
+            self.fondo_menu = pygame.image.load(ruta_img).convert_alpha()
 
     def actualizar(self, time_delta, tiempo_actual, keys):
         for evento in pygame.event.get():
@@ -50,24 +60,80 @@ class EscenaMenu:
                 pygame.quit()
                 sys.exit()
 
-            if evento.type == pygame.USEREVENT and hasattr(evento, 'user_type') and evento.user_type == pygame_gui.UI_BUTTON_PRESSED or evento.type == pygame.USEREVENT + 1:
-                try:
-                    if evento.ui_element == self.interfaz.boton_iniciar:
-                        self.manager.audio_manager.detener_musica()
-                        self.interfaz.destruir_menu_inicio()
-                        self.manager.cambiar_escena(EscenaJuego(self.manager))
-                    elif evento.ui_element == self.interfaz.boton_salir:
-                        pygame.quit()
-                        sys.exit()
-                except AttributeError:
-                    pass
+            if evento.type == pygame.MOUSEBUTTONDOWN and evento.button == 1:
+                pos_mouse = pygame.mouse.get_pos()
+                if self.rect_btn_iniciar.collidepoint(pos_mouse):
+                    self.manager.audio_manager.detener_musica()
+                    self.manager.cambiar_escena(EscenaJuego(self.manager))
+                    return
+                elif self.rect_btn_salir.collidepoint(pos_mouse):
+                    pygame.quit()
+                    sys.exit()
 
-            self.interfaz.manager.process_events(evento)
-        self.interfaz.manager.update(time_delta)
+        # Obtenemos la posición del mouse para evaluar la iluminación dinámica (Hover)
+        pos_mouse = pygame.mouse.get_pos()
 
     def dibujar(self):
-        self.manager.pantalla.fill((20, 20, 30))
-        self.interfaz.manager.draw_ui(self.manager.pantalla)
+        self.manager.pantalla.fill((color_fondo))
+
+        if self.fondo_menu:
+            self.manager.pantalla.blit(self.fondo_menu, (0, 0))
+
+        if os.path.exists(self.manager.ruta_fuente):
+            fuente_menu = pygame.font.Font(self.manager.ruta_fuente, 20)
+            fuente_titulo = pygame.font.Font(self.manager.ruta_fuente, 23)
+        else:
+            fuente_menu = pygame.font.SysFont("sans", 16, bold=True)
+            fuente_titulo = pygame.font.SysFont("sans", 24, bold=True)
+
+        # Cartel de presentacion rotado a -5° 
+        surf_titulo = fuente_titulo.render("ISAAC ARGENTO v0.2", True, (color_texto))
+        surf_titulo_rotada = pygame.transform.rotate(surf_titulo, -5)
+        self.manager.pantalla.blit(surf_titulo_rotada, (295, 195))
+
+        # Botones
+        ancho_b, alto_b = 180, 40
+        pos_mouse = pygame.mouse.get_pos()
+
+        # Determinación de color dinámico para el botón JUGAR
+        if self.rect_btn_iniciar.collidepoint(pos_mouse):
+            color_fondo_jugar = color_interaccion_boton
+        else:
+            color_fondo_jugar = color_boton
+
+        # Determinación de color dinámico para el botón SALIR
+        if self.rect_btn_salir.collidepoint(pos_mouse):
+            color_fondo_salir = color_interaccion_boton
+        else:
+            color_fondo_salir = color_boton
+
+        # Botón superior: JUGAR
+        surf_btn1 = pygame.Surface((ancho_b, alto_b), pygame.SRCALPHA)
+        pygame.draw.rect(surf_btn1, (color_fondo_jugar), (0, 0, ancho_b, alto_b), border_radius=3)
+        pygame.draw.rect(surf_btn1, (color_boton_borde), (0, 0, ancho_b, alto_b), 2, border_radius=3)
+        texto_btn1 = fuente_menu.render("JUGAR", True, (color_texto))
+        surf_btn1.blit(texto_btn1, texto_btn1.get_rect(center=(ancho_b // 2, alto_b // 2)))
+
+        # Botón inferior: SALIR
+        surf_btn2 = pygame.Surface((ancho_b, alto_b), pygame.SRCALPHA)
+        pygame.draw.rect(surf_btn2, (color_fondo_salir), (0, 0, ancho_b, alto_b), border_radius=3)
+        pygame.draw.rect(surf_btn2, (140, 124, 128), (0, 0, ancho_b, alto_b), 2, border_radius=3)
+        texto_btn2 = fuente_menu.render("SALIR", True, (color_texto))
+        surf_btn2.blit(texto_btn2, texto_btn2.get_rect(center=(ancho_b // 2, alto_b // 2)))
+
+        surf_btn1_rotado = pygame.transform.rotate(surf_btn1, -5)
+        surf_btn2_rotado = pygame.transform.rotate(surf_btn2, -5)
+
+        # ----------------- CALIBRACIÓN VERTICAL INDEPENDIENTE -----------------
+        pos_b1_x, pos_b1_y = 305, 330 
+        pos_b2_x, pos_b2_y = 313, 410  
+
+        # hitbox del boton ajustadas
+        self.rect_btn_iniciar = surf_btn1_rotado.get_rect(topleft=(pos_b1_x, pos_b1_y))
+        self.rect_btn_salir = surf_btn2_rotado.get_rect(topleft=(pos_b2_x, pos_b2_y))
+
+        self.manager.pantalla.blit(surf_btn1_rotado, (pos_b1_x, pos_b1_y))
+        self.manager.pantalla.blit(surf_btn2_rotado, (pos_b2_x, pos_b2_y))
 
 
 # =====================[ESCENA: PARTIDA JUGABLE]======================================
@@ -196,8 +262,7 @@ class EscenaFinJuego:
 
     def inicializar(self):
         self.manager.audio_manager.detener_musica()
-        # NUEVA RUTA SOLICITADA: imagenes -> menu -> endgame screen.png
-        ruta_img = os.path.join(os.path.dirname(__file__), "imagenes", "menu", "endgame screen.png")
+        ruta_img = os.path.join(os.path.dirname(__file__), "imagenes", "menu", "menu_endgame.png")
         if os.path.exists(ruta_img):
             self.fondo_endgame = pygame.image.load(ruta_img).convert_alpha()
 
@@ -218,46 +283,58 @@ class EscenaFinJuego:
 
     def dibujar(self):
         self.manager.pantalla.fill((20, 15, 15))
-        y_offset = (self.manager.resolucion[1] - 600) // 2
 
         if self.fondo_endgame:
-            self.manager.pantalla.blit(self.fondo_endgame, (0, y_offset))
+            self.manager.pantalla.blit(self.fondo_endgame, (0, 0))
 
         if os.path.exists(self.manager.ruta_fuente):
             fuente_fin = pygame.font.Font(self.manager.ruta_fuente, 20)
         else:
-            fuente_fin = pygame.font.SysFont("sans", 20, bold=True)
+            fuente_fin = pygame.font.SysFont("sans", 18, bold=True)
 
-        # Renderizamos e inclinamos 6° horarios (-6) el valor numérico del puntaje al lado de la palabra
-        surf_puntos = fuente_fin.render(str(Estadisticas.puntaje_final), True, (75, 75, 75))
-        surf_puntos_rotada = pygame.transform.rotate(surf_puntos, -6)
-        self.manager.pantalla.blit(surf_puntos_rotada, (380, y_offset + 410))
+        # Subsuperficie para puntos
+        surf_puntos = fuente_fin.render(str(Estadisticas.puntaje_final), True, (color_texto))
+        surf_puntos_rotada = pygame.transform.rotate(surf_puntos, -5)
+        self.manager.pantalla.blit(surf_puntos_rotada, (355, 455))
 
-        # Construcción de los botones interactivos e inclinados a -6°
-        ancho_b, alto_b = 210, 45
+        # Botones
+        ancho_b, alto_b = 180, 40
+        pos_mouse = pygame.mouse.get_pos()
+
+        # Determinación de color dinámico para el botón de reiniciar (Fin del juego)
+        if self.rect_btn_reiniciar.collidepoint(pos_mouse):
+            color_fondo_reiniciar = color_interaccion_boton
+        else:
+            color_fondo_reiniciar = color_boton
+
+        # Determinación de color dinámico para el botón de salir (Fin del juego)
+        if self.rect_btn_salir.collidepoint(pos_mouse):
+            color_fondo_salir_fin = color_interaccion_boton
+        else:
+            color_fondo_salir_fin = color_boton
 
         # Botón izquierdo: Jugar nuevamente
         surf_btn1 = pygame.Surface((ancho_b, alto_b), pygame.SRCALPHA)
-        pygame.draw.rect(surf_btn1, (116, 172, 223), (0, 0, ancho_b, alto_b), border_radius=4)
-        pygame.draw.rect(surf_btn1, (255, 255, 255), (0, 0, ancho_b, alto_b), 2, border_radius=4)
-        texto_btn1 = fuente_fin.render("Jugar nuevamente", True, (10, 20, 40))
+        pygame.draw.rect(surf_btn1, (color_fondo_reiniciar), (0, 0, ancho_b, alto_b), border_radius=3)
+        pygame.draw.rect(surf_btn1, (140, 124, 128), (0, 0, ancho_b, alto_b), 2, border_radius=3)
+        texto_btn1 = fuente_fin.render("Volver a Jugar", True, (color_texto))
         surf_btn1.blit(texto_btn1, texto_btn1.get_rect(center=(ancho_b // 2, alto_b // 2)))
 
         # Botón derecho: Salir del juego
         surf_btn2 = pygame.Surface((ancho_b, alto_b), pygame.SRCALPHA)
-        pygame.draw.rect(surf_btn2, (116, 172, 223), (0, 0, ancho_b, alto_b), border_radius=4)
-        pygame.draw.rect(surf_btn2, (255, 255, 255), (0, 0, ancho_b, alto_b), 2, border_radius=4)
-        texto_btn2 = fuente_fin.render("Salir del juego", True, (10, 20, 40))
+        pygame.draw.rect(surf_btn2, (color_fondo_salir_fin), (0, 0, ancho_b, alto_b), border_radius=3)
+        pygame.draw.rect(surf_btn2, (140, 124, 128), (0, 0, ancho_b, alto_b), 2, border_radius=3)
+        texto_btn2 = fuente_fin.render("Salir del juego", True, (color_texto))
         surf_btn2.blit(texto_btn2, texto_btn2.get_rect(center=(ancho_b // 2, alto_b // 2)))
 
-        surf_btn1_rotado = pygame.transform.rotate(surf_btn1, -6)
-        surf_btn2_rotado = pygame.transform.rotate(surf_btn2, -6)
+        surf_btn1_rotado = pygame.transform.rotate(surf_btn1, -5)
+        surf_btn2_rotado = pygame.transform.rotate(surf_btn2, -5)
 
-        # Posicionamiento calibrado según la pendiente de la hoja arrugada
-        pos_b1_x, pos_b1_y = 175, y_offset + 490
-        pos_b2_x, pos_b2_y = 415, y_offset + 515
+        # Posicionamiento ajustado con la hoja (Coordenadas absolutas de pantalla)
+        pos_b1_x, pos_b1_y = 175, 489
+        pos_b2_x, pos_b2_y = 370, 507
 
-        # Almacenamos las hitboxes rotadas expandidas para colisiones perfectas de mouse
+        # hitbox del boton ajustadas
         self.rect_btn_reiniciar = surf_btn1_rotado.get_rect(topleft=(pos_b1_x, pos_b1_y))
         self.rect_btn_salir = surf_btn2_rotado.get_rect(topleft=(pos_b2_x, pos_b2_y))
 
