@@ -7,12 +7,10 @@ class BalaEnemigo(Bala):
 
     def __init__(self, x, y, dire_x, dire_y, daño=1):
         super().__init__(x, y, dire_x, dire_y, daño)
-
-        # Stats propias
-        self.bala_vel = 10
+        # velocidad propia
+        self.velocidad = 5
+        # daño propio
         self.daño = daño
-
-        # Estadísticas separadas
         Estadisticas.sumar_balas_enemigo_disparadas()
 
     def dibujar(self, pantalla):
