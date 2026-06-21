@@ -18,7 +18,7 @@ color_fondo = (20, 15, 15)
 color_interaccion_boton = (195, 189, 180)
 
 class SceneManager:
-    def __init__(self, pantalla, resolucion, audio_manager, ui_manager, ruta_themes, ruta_fuente, alto_hud=75):
+    def __init__(self, pantalla, resolucion, audio_manager, ui_manager, ruta_themes, ruta_fuente, alto_hud=120):
         self.pantalla = pantalla
         self.resolucion = resolucion
         self.audio_manager = audio_manager

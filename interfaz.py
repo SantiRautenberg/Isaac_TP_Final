@@ -5,7 +5,7 @@ import os
 from estadistica import Estadisticas
 
 class Interfaz:
-    def __init__(self, resolucion, manager_ui, ruta_fuente, alto_hud=75):
+    def __init__(self, resolucion, manager_ui, ruta_fuente, alto_hud=100):
         # ----------------- PARAMETRIZACIÓN INICIAL -----------------
         self.resolucion = resolucion
         self.ruta_fuente = ruta_fuente
@@ -89,7 +89,7 @@ class Interfaz:
             alto_minimapa = (max_y - min_y) * separacion_y + tile_alto
 
             start_x = self.resolucion[0] - ancho_minimapa - 35
-            start_y = 12 + (50 - alto_minimapa) // 2
+            start_y = (self.alto_hud - alto_minimapa) // 2 
 
             if start_y < 6:
                 start_y = 6
@@ -133,5 +133,4 @@ class Interfaz:
                         color_bloque = (245, 245, 250)
 
                     pygame.draw.rect(pantalla, color_bloque, (bx, by, 26, 19))
-                    pygame.draw.rect(pantalla, (10, 10, 15), (bx, by, 26, 19), 1)
-                    
+                    pygame.draw.rect(pantalla, (10, 10, 15), (bx, by, 26, 19), 1)    

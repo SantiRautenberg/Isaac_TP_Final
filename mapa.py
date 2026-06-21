@@ -18,10 +18,6 @@ TAM_ROCA = 60
 # ============================================================
 
 def quitar_fondo_por_esquinas(superficie, tolerancia=55):
-    """
-    Limpia el fondo tomando como referencia los colores de las esquinas.
-    Usar solo en sprites chicos, no en fondos grandes.
-    """
     superficie = superficie.convert_alpha()
 
     ancho = superficie.get_width()
@@ -668,7 +664,6 @@ class Piso(Base):
                     AudioManager.play_sfx("spawn_jefe")
 
         tiempo_actual = pygame.time.get_ticks()
-        # 🔥 RESET DE ENEMIGOS AL ENTRAR A LA SALA
         for enemigo in self.sala_actual.enemigos:
             enemigo.tiempo_spawn = tiempo_actual 
             enemigo.resetear_delay()           
@@ -680,8 +675,7 @@ class Piso(Base):
             "- obstaculos:",
             len(self.sala_actual.obstaculos),
             "- enemigos:",
-            len(self.sala_actual.enemigos)
-         )
+            len(self.sala_actual.enemigos))
 
     def cambiar_sala_por_direccion(self, direccion):
         if self.sala_actual is None:
