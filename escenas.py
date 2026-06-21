@@ -241,18 +241,58 @@ class EscenaJuego:
         self.mapa.actualizar(self.manager.pantalla, self.jugador, self.balas_enemigos)
 
         # Control de choques de las lagrimas contra las paredes o rocas
+        # Control de choques de las lagrimas
         for bala in self.balas_jugador[:]:
             bala.actualizar(self.manager.pantalla)
             rect_bala = pygame.Rect(bala.x, bala.y, 12, 12)
+            bala_eliminada = False
 
-            # colisión con paredes
+            # ======================================
+            # COLISIÓN BALA VS ENEMIGOS
+            # ======================================
+            sala_actual = self.mapa.piso_actual.sala_actual
+
+            for enemigo in sala_actual.enemigos[:]:
+                if rect_bala.colliderect(enemigo.rect):
+
+                    enemigo.recibir_dano(bala.daño)
+                    Estadisticas.sumar_balas_efectivas()
+
+                    AudioManager.play_sfx("lagrima_impacto")
+
+                    if bala in self.balas_jugador:
+                        self.balas_jugador.remove(bala)
+                    bala_eliminada = True
+
+                    # enemigo muerto
+                    if enemigo.vida <= 0:
+                        Estadisticas.sumar_enemigos_asesinados("Mosca")
+                        sala_actual.enemigos.remove(enemigo)
+
+                    break
+
+            if bala_eliminada:
+                continue
+
+            # ======================================
+            # COLISIÓN CON PAREDES
+            # ======================================
             if self.mapa.colision(rect_bala):
-                self.balas_jugador.remove(bala)
+
+                if bala in self.balas_jugador:
+                    self.balas_jugador.remove(bala)
                 AudioManager.play_sfx("lagrima_impacto")
-            # fuera de pantalla
+
+            # ======================================
+            # FUERA DE PANTALLA
+            # ======================================
             elif bala.x < 0 or bala.x > 800 or bala.y < 0 or bala.y > 600:
-                self.balas_jugador.remove(bala)
+
+                if bala in self.balas_jugador:
+                    self.balas_jugador.remove(bala)
+
         self.revisar_cambio_sala()
+
 
         for bala in self.balas_enemigos[:]:
             bala.actualizar(self.manager.pantalla)
