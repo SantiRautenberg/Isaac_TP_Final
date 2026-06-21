@@ -67,32 +67,58 @@ class Interfaz:
         pantalla.blit(texto_score, (260, self.alto_hud // 2 - 10))
 
         # Minimapa
-        start_x = self.resolucion[0] - 150
-        start_y = 12
-
-        posiciones_mapa_fijo = {
-            "comun_1": (0, 0), "comun_2": (1, 0), "tesoro": (2, 0),
-            "comun_3": (0, 1), "comun_4": (1, 1), "boss": (2, 1)
-        }
-
         piso_actual = mapa.piso_actual
-        if piso_actual:
+
+        if piso_actual and hasattr(piso_actual, "posiciones_salas"):
+            posiciones_mapa = piso_actual.posiciones_salas
+
+            if not posiciones_mapa:
+                return
+
+            tile_ancho = 26
+            tile_alto = 19
+            separacion_x = 38
+            separacion_y = 28
+
+            min_x = min(pos[0] for pos in posiciones_mapa.values())
+            max_x = max(pos[0] for pos in posiciones_mapa.values())
+            min_y = min(pos[1] for pos in posiciones_mapa.values())
+            max_y = max(pos[1] for pos in posiciones_mapa.values())
+
+            ancho_minimapa = (max_x - min_x) * separacion_x + tile_ancho
+            alto_minimapa = (max_y - min_y) * separacion_y + tile_alto
+
+            start_x = self.resolucion[0] - ancho_minimapa - 35
+            start_y = 12 + (50 - alto_minimapa) // 2
+
+            if start_y < 6:
+                start_y = 6
+
             for nombre_sala, sala in piso_actual.salas.items():
-                if nombre_sala in posiciones_mapa_fijo:
-                    gx, gy = posiciones_mapa_fijo[nombre_sala]
+                if nombre_sala in posiciones_mapa:
+                    gx, gy = posiciones_mapa[nombre_sala]
+                    gx -= min_x
+                    gy -= min_y
+
                     centro_origen_x = start_x + (gx * 38) + 13
                     centro_origen_y = start_y + (gy * 28) + 9
 
                     for direccion, destino in sala.conexiones.items():
-                        if destino in posiciones_mapa_fijo:
-                            dgx, dgy = posiciones_mapa_fijo[destino]
+                        if destino in posiciones_mapa:
+                            dgx, dgy = posiciones_mapa[destino]
+                            dgx -= min_x
+                            dgy -= min_y
+
                             centro_destino_x = start_x + (dgx * 38) + 13
                             centro_destino_y = start_y + (dgy * 28) + 9
                             pygame.draw.line(pantalla, (90, 90, 95), (centro_origen_x, centro_origen_y), (centro_destino_x, centro_destino_y), 3)
 
             for nombre_sala, sala in piso_actual.salas.items():
-                if nombre_sala in posiciones_mapa_fijo:
-                    grid_x, grid_y = posiciones_mapa_fijo[nombre_sala]
+                if nombre_sala in posiciones_mapa:
+                    grid_x, grid_y = posiciones_mapa[nombre_sala]
+                    grid_x -= min_x
+                    grid_y -= min_y
+
                     bx = start_x + (grid_x * 38)
                     by = start_y + (grid_y * 28)
 
