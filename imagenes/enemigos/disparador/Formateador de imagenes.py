@@ -25,7 +25,8 @@ reglas_resolucion = {
     "cerrada": (90, 90),
     "abierta": (120, 120),
     "puerta": (1024, 1024),
-    "menu": (800, 675)
+    "menu": (800, 675),
+    "ene": (312, 454),
 }
 
 print(f"=== Iniciando optimización masiva en: {ruta_mapa} ===")

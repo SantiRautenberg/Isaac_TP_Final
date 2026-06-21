@@ -2,7 +2,6 @@
 import pygame
 import pygame_gui
 import os
-import sys
 from audio import AudioManager
 import escenas
 

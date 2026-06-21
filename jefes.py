@@ -1,5 +1,4 @@
 #jefes.py
-# jefes.py
 import pygame
 import math
 from enemigo import Enemigo
@@ -17,8 +16,8 @@ class JefeBase(Enemigo):
         self.color = color
 
     def dibujar_barra_vida(self, pantalla):
-        ancho_barra = 300
-        alto_barra = 18
+        ancho_barra = 450
+        alto_barra = 20
         x = 250
         y = 20
 
