@@ -6,10 +6,6 @@ import math
 import os
 
 class Enemigo(Base):
-    def puede_actuar(self):
-        tiempo_actual = pygame.time.get_ticks()
-        return tiempo_actual - self.tiempo_spawn >= self.delay_entrada
-    
     def __init__(self, x, y, velocidad=2, vida=5, daño=1):
         super().__init__(x, y)
 
@@ -17,8 +13,7 @@ class Enemigo(Base):
         self.vida = vida
         self.daño = daño
 
-        # DELAY DE ENTRADA
-        self.delay_entrada = 2000
+        self.delay_entrada = 1000
         self.tiempo_spawn = pygame.time.get_ticks()
 
         self.ancho = 40
@@ -59,6 +54,9 @@ class Enemigo(Base):
     def puede_actuar(self):
         tiempo_actual = pygame.time.get_ticks()
         return tiempo_actual - self.tiempo_spawn >= self.delay_entrada
+
+    def resetear_delay(self):
+        self.tiempo_spawn = pygame.time.get_ticks()
 
     def seguir_jugador(self, jugador):
         dx = jugador.x - self.x
@@ -140,7 +138,7 @@ class Enemigo(Base):
                 self.hacer_daño_al_jugador(jugador)
 
     def recibir_dano(self, cantidad):
-       self.vida -= cantidad
+        self.vida -= cantidad
 
     def esta_muerto(self):
        return self.vida <= 0

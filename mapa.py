@@ -403,6 +403,10 @@ class Sala(Base):
             if len(self.enemigos) == 0:
                 self.trampilla.abrir()
 
+    def al_entrar(self, tiempo_actual):
+        for enemigo in self.enemigos:
+            enemigo.resetear_delay(tiempo_actual)
+
     def colision(self, rect_jugador):
         for obstaculo in self.obstaculos:
             if rect_jugador.colliderect(obstaculo.rect):
@@ -643,16 +647,21 @@ class Piso(Base):
     def cambiar_sala(self, nombre_sala):
         if nombre_sala in self.salas:
             self.sala_actual = self.salas[nombre_sala]
-            print(
-                "Sala actual:",
-                self.sala_actual.nombre,
-                "- tipo:",
-                self.sala_actual.tipo,
-                "- obstaculos:",
-                len(self.sala_actual.obstaculos),
-                "- enemigos:",
-                len(self.sala_actual.enemigos)
-            )
+        tiempo_actual = pygame.time.get_ticks()
+        # 🔥 RESET DE ENEMIGOS AL ENTRAR A LA SALA
+        for enemigo in self.sala_actual.enemigos:
+            enemigo.tiempo_spawn = tiempo_actual 
+            enemigo.resetear_delay()           
+        print(
+            "Sala actual:",
+            self.sala_actual.nombre,
+            "- tipo:",
+            self.sala_actual.tipo,
+            "- obstaculos:",
+            len(self.sala_actual.obstaculos),
+            "- enemigos:",
+            len(self.sala_actual.enemigos)
+         )
 
     def cambiar_sala_por_direccion(self, direccion):
         if self.sala_actual is None:
