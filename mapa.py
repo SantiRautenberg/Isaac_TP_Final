@@ -3,6 +3,7 @@ import pygame
 import random
 import os
 from base import Base
+from audio import AudioManager
 from enemigo import Enemigo, EnemigoDisparador
 
 ANCHO_PANTALLA = 800
@@ -189,7 +190,9 @@ class Sala(Base):
         if jugador is not None:
             for ene in self.enemigos[:]:
                 ene.actualizar(jugador, lista_balas)
-                if ene.vida <= 0: self.enemigos.remove(ene)
+                if ene.vida <= 0:
+                    self.enemigos.remove(ene)
+                    AudioManager.play_sfx("muerte_enemigo")
         if self.tipo == "boss" and self.trampilla and len(self.enemigos) == 0:
             self.trampilla.abrir()
 

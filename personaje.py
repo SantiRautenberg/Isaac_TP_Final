@@ -1,6 +1,7 @@
 # personaje.py
 from base import Base
 from estadistica import Estadisticas
+from audio import AudioManager
 import pygame
 import os
 
@@ -132,6 +133,7 @@ class Jugador(Base):
         restar_vida = self.__vida - daño_recibido
         self.set_vida(restar_vida)
         Estadisticas.sumar_daño_recibido(daño_recibido)
+        AudioManager.play_sfx("daño_isaac")
 
     def morir(self):
         self.__vivo = False
