@@ -3,28 +3,31 @@ import pygame
 import pygame_gui
 import os
 import sys
-# Importar las clases desde sus respectivos archivos
 from personaje import Jugador
 from bala import Bala
-from enemigo import Enemigo # agregar las otras clases de enemigos y el generador
 from mapa import Mapa
 from interfaz import Interfaz
 from estadistica import Estadisticas
+from audio import AudioManager
+
+# Variables de colores 
+color_boton = (236, 220, 220)
+color_boton_borde = (140, 124, 128)
+color_texto = (92, 44, 52)
+color_fondo = (20, 15, 15)
+color_interaccion_boton = (195, 189, 180)
 
 class SceneManager:
-    
-    def __init__(self, pantalla, resolucion, audio_manager, ui_manager, ruta_themes, ruta_fuente):
+    def __init__(self, pantalla, resolucion, audio_manager, ui_manager, ruta_themes, ruta_fuente, alto_hud=75):
         self.pantalla = pantalla
         self.resolucion = resolucion
         self.audio_manager = audio_manager
-        self.ui_manager = ui_manager  # Guardamos el manager global compartido
+        self.ui_manager = ui_manager
         self.ruta_themes = ruta_themes
         self.ruta_fuente = ruta_fuente
-        
-        # Escena activa actual
+        self.alto_hud = alto_hud
         self.escena_actual = None
 
-    # =====================[CONTROL DE TRANSICIONES]======================================
     def cambiar_escena(self, nueva_escena):
         self.escena_actual = nueva_escena
         self.escena_actual.inicializar()
@@ -37,19 +40,20 @@ class SceneManager:
         if self.escena_actual:
             self.escena_actual.dibujar()
 
+
 # =====================[ESCENA: MENÚ PRINCIPAL]=======================================
 class EscenaMenu:
-    
     def __init__(self, manager_escenas):
         self.manager = manager_escenas
-        self.interfaz = None
+        self.fondo_menu = None
+        self.rect_btn_iniciar = pygame.Rect(0, 0, 0, 0)
+        self.rect_btn_salir = pygame.Rect(0, 0, 0, 0)
 
     def inicializar(self):
-        # Instanciamos el Menu con el manager
-        self.interfaz = Interfaz(self.manager.resolucion, self.manager.ui_manager, self.manager.ruta_fuente)
-        self.interfaz.crear_menu_inicio()
-        # Reproducir música de menú
-        self.manager.audio_manager.reproducir_musica("musica_menu.mp3", volumen=0.2)
+        AudioManager.play_music("musica_menu.mp3", volumen=0.2)
+        ruta_img = os.path.join(os.path.dirname(__file__), "imagenes", "menu", "menu_inicial.png")
+        if os.path.exists(ruta_img):
+            self.fondo_menu = pygame.image.load(ruta_img).convert_alpha()
 
     def actualizar(self, time_delta, tiempo_actual, keys):
         for evento in pygame.event.get():
@@ -57,225 +61,293 @@ class EscenaMenu:
                 pygame.quit()
                 sys.exit()
 
-            # Botones del Menu
-            if evento.type == pygame.USEREVENT and hasattr(evento, 'user_type') and evento.user_type == pygame_gui.UI_BUTTON_PRESSED or evento.type == pygame.USEREVENT + 1:
-                try:
-                    if evento.ui_element == self.interfaz.boton_iniciar:
-                        self.manager.audio_manager.detener_musica()
-                        self.interfaz.destruir_menu_inicio()
-                        self.manager.cambiar_escena(EscenaJuego(self.manager))
+            if evento.type == pygame.MOUSEBUTTONDOWN and evento.button == 1:
+                pos_mouse = pygame.mouse.get_pos()
+                if self.rect_btn_iniciar.collidepoint(pos_mouse):
+                    self.manager.cambiar_escena(EscenaJuego(self.manager))
+                    return
+                elif self.rect_btn_salir.collidepoint(pos_mouse):
+                    pygame.quit()
+                    sys.exit()
 
-                    elif evento.ui_element == self.interfaz.boton_pruebas:
-                        self.interfaz.destruir_menu_inicio()
-                        self.manager.cambiar_escena(EntornoPruebas(self.manager))
-
-                    elif evento.ui_element == self.interfaz.boton_salir:
-                        pygame.quit()
-                        sys.exit()
-                except AttributeError:
-                    pass
-
-            self.interfaz.manager.process_events(evento)
-
-        self.interfaz.manager.update(time_delta)
+        # Regulamos la iluminacion de los botones con el mouse
+        pos_mouse = pygame.mouse.get_pos()
 
     def dibujar(self):
-        self.manager.pantalla.fill((20, 20, 30))
-        self.interfaz.manager.draw_ui(self.manager.pantalla)
+        self.manager.pantalla.fill((color_fondo))
 
-# =====================[ESCENA: ENTORNO DE PRUEBAS HUD]===============================
-class EntornoPruebas:
-    
-    def __init__(self, manager_escenas):
-        self.manager = manager_escenas
-        self.interfaz = None
+        if self.fondo_menu:
+            self.manager.pantalla.blit(self.fondo_menu, (0, 0))
 
-    def inicializar(self):
-        self.interfaz = Interfaz(self.manager.resolucion, self.manager.ui_manager, self.manager.ruta_fuente)
-        self.interfaz.crear_entorno_pruebas()
+        if os.path.exists(self.manager.ruta_fuente):
+            fuente_menu = pygame.font.Font(self.manager.ruta_fuente, 20)
+            fuente_titulo = pygame.font.Font(self.manager.ruta_fuente, 23)
+        else:
+            fuente_menu = pygame.font.SysFont("sans", 16, bold=True)
+            fuente_titulo = pygame.font.SysFont("sans", 24, bold=True)
 
-    def actualizar(self, time_delta, tiempo_actual, keys):
-        for evento in pygame.event.get():
-            if evento.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
-                
-            if evento.type == pygame.USEREVENT and hasattr(evento, 'ui_element'):
-                if evento.ui_element == self.interfaz.boton_volver:
-                    self.interfaz.boton_volver.kill()
-                    # Regreso limpio a la clase EscenaMenu
-                    self.manager.cambiar_escena(EscenaMenu(self.manager))
-                    
-            self.interfaz.manager.process_events(evento)
-            
-        self.interfaz.manager.update(time_delta)
+        # Cartel de presentacion rotado a -5° 
+        surf_titulo = fuente_titulo.render("ISAAC ARGENTO v0.2", True, (color_texto))
+        surf_titulo_rotada = pygame.transform.rotate(surf_titulo, -5)
+        self.manager.pantalla.blit(surf_titulo_rotada, (295, 195))
 
-    def dibujar(self):
-        self.manager.pantalla.fill((40, 40, 45))
-        self.interfaz.dibujar_prototipo_hud(self.manager.pantalla)
-        self.interfaz.manager.draw_ui(self.manager.pantalla)
+        # Botones
+        ancho_b, alto_b = 180, 40
+        pos_mouse = pygame.mouse.get_pos()
+
+        # Determinación de color dinámico para el botón JUGAR
+        if self.rect_btn_iniciar.collidepoint(pos_mouse):
+            color_fondo_jugar = color_interaccion_boton
+        else:
+            color_fondo_jugar = color_boton
+
+        # Determinación de color dinámico para el botón SALIR
+        if self.rect_btn_salir.collidepoint(pos_mouse):
+            color_fondo_salir = color_interaccion_boton
+        else:
+            color_fondo_salir = color_boton
+
+        # Botón superior: JUGAR
+        surf_btn1 = pygame.Surface((ancho_b, alto_b), pygame.SRCALPHA)
+        pygame.draw.rect(surf_btn1, (color_fondo_jugar), (0, 0, ancho_b, alto_b), border_radius=3)
+        pygame.draw.rect(surf_btn1, (color_boton_borde), (0, 0, ancho_b, alto_b), 2, border_radius=3)
+        texto_btn1 = fuente_menu.render("JUGAR", True, (color_texto))
+        surf_btn1.blit(texto_btn1, texto_btn1.get_rect(center=(ancho_b // 2, alto_b // 2)))
+
+        # Botón inferior: SALIR
+        surf_btn2 = pygame.Surface((ancho_b, alto_b), pygame.SRCALPHA)
+        pygame.draw.rect(surf_btn2, (color_fondo_salir), (0, 0, ancho_b, alto_b), border_radius=3)
+        pygame.draw.rect(surf_btn2, (140, 124, 128), (0, 0, ancho_b, alto_b), 2, border_radius=3)
+        texto_btn2 = fuente_menu.render("SALIR", True, (color_texto))
+        surf_btn2.blit(texto_btn2, texto_btn2.get_rect(center=(ancho_b // 2, alto_b // 2)))
+
+        surf_btn1_rotado = pygame.transform.rotate(surf_btn1, -5)
+        surf_btn2_rotado = pygame.transform.rotate(surf_btn2, -5)
+
+        # ----------------- CALIBRACIÓN VERTICAL INDEPENDIENTE -----------------
+        pos_b1_x, pos_b1_y = 305, 330 
+        pos_b2_x, pos_b2_y = 313, 410  
+
+        # hitbox del boton ajustadas
+        self.rect_btn_iniciar = surf_btn1_rotado.get_rect(topleft=(pos_b1_x, pos_b1_y))
+        self.rect_btn_salir = surf_btn2_rotado.get_rect(topleft=(pos_b2_x, pos_b2_y))
+
+        self.manager.pantalla.blit(surf_btn1_rotado, (pos_b1_x, pos_b1_y))
+        self.manager.pantalla.blit(surf_btn2_rotado, (pos_b2_x, pos_b2_y))
+
 
 # =====================[ESCENA: PARTIDA JUGABLE]======================================
 class EscenaJuego:
-    
     def __init__(self, manager_escenas):
         self.manager = manager_escenas
-
-        self.jugador = Jugador(100, 100)
+        self.jugador = Jugador(200, 200)
         self.mapa = Mapa()
-
-        # Las balas sí las maneja EscenaJuego
         self.balas = []
-
-        # En entidades dejamos solamente al jugador.
-        # Los enemigos los maneja el mapa.
-        self.entidades = [self.jugador]
-
         self.delay_disparo = 500
         self.ultimo_disparo = 0
 
+        # Reseteamos el puntaje global al iniciar una nueva partida
+        Estadisticas.puntaje_final = 0
+        
+
     def inicializar(self):
-        pass
-
+        AudioManager.stop_music() # Paramos la musica del menu cuando iniciamos la partida
+        self.interfaz = Interfaz(self.manager.resolucion, self.manager.ui_manager, self.manager.ruta_fuente, self.manager.alto_hud)
+        AudioManager.play_music("musica_fondo.mp3", volumen=0.2)
+        
     def revisar_cambio_sala(self):
-        ancho_pantalla, alto_pantalla = self.manager.resolucion
-        margen = 10
+        ancho_canvas = 800
+        alto_canvas = 600
+        margen = 15
 
-        if self.jugador.rect.left <= 0:
-            if self.mapa.cambiar_sala_por_direccion("IZQUIERDA"):
-                self.jugador.x = ancho_pantalla - self.jugador.dimensiones[0] - margen
+        if self.jugador.rect.left <= 10:
+            if 225 <= self.jugador.rect.centery <= 375 and self.mapa.cambiar_sala_por_direccion("IZQUIERDA"):
+                self.jugador.x = ancho_canvas - self.jugador.dimensiones[0] - margen
             else:
-                self.jugador.x = 0
-
+                self.jugador.x = 10
             self.jugador.rect.x = self.jugador.x
 
-        elif self.jugador.rect.right >= ancho_pantalla:
-            if self.mapa.cambiar_sala_por_direccion("DERECHA"):
+        elif self.jugador.rect.right >= ancho_canvas:
+            if 225 <= self.jugador.rect.centery <= 375 and self.mapa.cambiar_sala_por_direccion("DERECHA"):
                 self.jugador.x = margen
             else:
-                self.jugador.x = ancho_pantalla - self.jugador.dimensiones[0]
-
+                self.jugador.x = ancho_canvas - self.jugador.dimensiones[0]
             self.jugador.rect.x = self.jugador.x
 
         elif self.jugador.rect.top <= 0:
-            if self.mapa.cambiar_sala_por_direccion("ARRIBA"):
-                self.jugador.y = alto_pantalla - self.jugador.dimensiones[1] - margen
+            if 325 <= self.jugador.rect.centerx <= 475 and self.mapa.cambiar_sala_por_direccion("ARRIBA"):
+                self.jugador.y = alto_canvas - self.jugador.dimensiones[1] - margen
             else:
                 self.jugador.y = 0
-
             self.jugador.rect.y = self.jugador.y
 
-        elif self.jugador.rect.bottom >= alto_pantalla:
-            if self.mapa.cambiar_sala_por_direccion("ABAJO"):
+        elif self.jugador.rect.bottom >= alto_canvas:
+            if 325 <= self.jugador.rect.centerx <= 475 and self.mapa.cambiar_sala_por_direccion("ABAJO"):
                 self.jugador.y = margen
             else:
-                self.jugador.y = alto_pantalla - self.jugador.dimensiones[1]
-
+                self.jugador.y = alto_canvas - self.jugador.dimensiones[1]
             self.jugador.rect.y = self.jugador.y
 
     def actualizar(self, time_delta, tiempo_actual, keys):
-        # =====================[TEST CAMBIO DE SALAS/PISOS]=====================
+        # Control de muerte del personaje
+        if self.jugador.get_vida() <= 0:
+            AudioManager.play_sfx("muerte_isaac")
+            self.manager.cambiar_escena(EscenaFinJuego(self.manager))
+            return
+
         if keys[pygame.K_1]: self.mapa.cambiar_sala("comun_1")
         if keys[pygame.K_2]: self.mapa.cambiar_sala("comun_2")
         if keys[pygame.K_3]: self.mapa.cambiar_sala("tesoro")
         if keys[pygame.K_4]: self.mapa.cambiar_sala("boss")
-        
-        # Procesamos los eventos de la ventana
+
+        for evento in pygame.event.get():
+            if evento.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if evento.type == pygame.KEYDOWN and evento.key == pygame.K_ESCAPE:
+                self.manager.cambiar_escena(EscenaMenu(self.manager))
+                return
+
+        if keys[pygame.K_RIGHT] and tiempo_actual - self.ultimo_disparo > self.delay_disparo:
+            bala = Bala(self.jugador.x + 50, self.jugador.y + 25, 1, 0, daño=self.jugador.get_daño())
+            self.balas.append(bala)
+            self.jugador.direccion_actual = "DERECHA"
+            AudioManager.play_sfx("disparo")
+            self.ultimo_disparo = tiempo_actual
+
+        elif keys[pygame.K_LEFT] and tiempo_actual - self.ultimo_disparo > self.delay_disparo:
+            bala = Bala(self.jugador.x, self.jugador.y + 25, -1, 0, daño=self.jugador.get_daño())
+            self.balas.append(bala)
+            self.jugador.direccion_actual = "IZQUIERDA"
+            AudioManager.play_sfx("disparo")
+            self.ultimo_disparo = tiempo_actual
+
+        elif keys[pygame.K_UP] and tiempo_actual - self.ultimo_disparo > self.delay_disparo:
+            bala = Bala(self.jugador.x + 25, self.jugador.y, 0, -1, daño=self.jugador.get_daño())
+            self.balas.append(bala)
+            self.jugador.direccion_actual = "ARRIBA"
+            AudioManager.play_sfx("disparo")
+            self.ultimo_disparo = tiempo_actual
+
+        elif keys[pygame.K_DOWN] and tiempo_actual - self.ultimo_disparo > self.delay_disparo:
+            bala = Bala(self.jugador.x + 25, self.jugador.y + 50, 0, 1, daño=self.jugador.get_daño())
+            self.balas.append(bala)
+            self.jugador.direccion_actual = "ABAJO"
+            AudioManager.play_sfx("disparo")
+            self.ultimo_disparo = tiempo_actual
+
+        self.jugador.actualizar(self.manager.pantalla, keys, self.mapa)
+        self.mapa.actualizar(self.manager.pantalla, self.jugador, self.balas)
+
+        # Control de choques de las lagrimas contra las paredes o rocas
+        for bala in self.balas[:]:
+            bala.actualizar(self.manager.pantalla)
+            rect_bala = pygame.Rect(bala.x, bala.y, 12, 12)
+            
+            if self.mapa.colision(rect_bala):
+                self.balas.remove(bala)
+                AudioManager.play_sfx("lagrima_impacto")
+            elif bala.x < 0 or bala.x > 800 or bala.y < 0 or bala.y > 600:
+                self.balas.remove(bala)
+
+        self.revisar_cambio_sala()
+
+    def dibujar(self):
+        subsuperficie_juego = self.manager.pantalla.subsurface((0, self.manager.alto_hud, 800, 600))
+        self.mapa.dibujar(subsuperficie_juego)
+        self.jugador.dibujar(subsuperficie_juego)
+
+        for bala in self.balas:
+            bala.dibujar(subsuperficie_juego)
+
+        self.interfaz.dibujar_hud_juego(self.manager.pantalla, self.jugador, self.mapa)
+
+
+# =====================[ESCENA: FIN DEL JUEGO]=======================================
+class EscenaFinJuego:
+    def __init__(self, manager_escenas):
+        self.manager = manager_escenas
+        self.fondo_endgame = None
+        self.rect_btn_reiniciar = pygame.Rect(0, 0, 0, 0)
+        self.rect_btn_salir = pygame.Rect(0, 0, 0, 0)
+
+    def inicializar(self):
+        AudioManager.stop_music()
+        ruta_img = os.path.join(os.path.dirname(__file__), "imagenes", "menu", "menu_endgame.png")
+        if os.path.exists(ruta_img):
+            self.fondo_endgame = pygame.image.load(ruta_img).convert_alpha()
+
+    def actualizar(self, time_delta, tiempo_actual, keys):
         for evento in pygame.event.get():
             if evento.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
 
-        # =====================[DISPARO DEL JUGADOR]=====================
-        if keys[pygame.K_RIGHT] and tiempo_actual - self.ultimo_disparo > self.delay_disparo:
-            bala = Bala(
-                self.jugador.x + 50,
-                self.jugador.y + 50,
-                1,
-                0,
-                daño=self.jugador.get_daño()
-            )
-
-            self.balas.append(bala)
-            self.jugador.direccion_actual = "DERECHA"
-            self.manager.audio_manager.reproducir_sfx("disparo")
-            self.ultimo_disparo = tiempo_actual
-
-        elif keys[pygame.K_LEFT] and tiempo_actual - self.ultimo_disparo > self.delay_disparo:
-            bala = Bala(
-                self.jugador.x + 50,
-                self.jugador.y + 50,
-                -1,
-                0,
-                daño=self.jugador.get_daño()
-            )
-
-            self.balas.append(bala)
-            self.jugador.direccion_actual = "IZQUIERDA"
-            self.manager.audio_manager.reproducir_sfx("disparo")
-            self.ultimo_disparo = tiempo_actual
-
-        elif keys[pygame.K_UP] and tiempo_actual - self.ultimo_disparo > self.delay_disparo:
-            bala = Bala(
-                self.jugador.x + 25,
-                self.jugador.y,
-                0,
-                -1,
-                daño=self.jugador.get_daño()
-            )
-
-            self.balas.append(bala)
-            self.jugador.direccion_actual = "ARRIBA"
-            self.manager.audio_manager.reproducir_sfx("disparo")
-            self.ultimo_disparo = tiempo_actual
-
-        elif keys[pygame.K_DOWN] and tiempo_actual - self.ultimo_disparo > self.delay_disparo:
-            bala = Bala(
-                self.jugador.x + 25,
-                self.jugador.y + 50,
-                0,
-                1,
-                daño=self.jugador.get_daño()
-            )
-
-            self.balas.append(bala)
-            self.jugador.direccion_actual = "ABAJO"
-            self.manager.audio_manager.reproducir_sfx("disparo")
-            self.ultimo_disparo = tiempo_actual
-
-        # =====================[ACTUALIZAR JUGADOR]=====================
-        self.jugador.actualizar(
-            self.manager.pantalla,
-            keys,
-            self.mapa
-        )
-
-        # =====================[ACTUALIZAR MAPA Y ENEMIGOS]=====================
-        # El mapa actualiza obstáculos, enemigos y enemigos disparadores.
-        # Le pasamos balas para que el mapa pueda chequear colisiones o agregar disparos.
-        self.mapa.actualizar(
-            self.manager.pantalla,
-            self.jugador,
-            self.balas
-        )
-
-        # =====================[ACTUALIZAR BALAS]=====================
-        for bala in self.balas[:]:
-            bala.actualizar(self.manager.pantalla)
-
-            if bala.x < 0 or bala.x > 800 or bala.y < 0 or bala.y > 600:
-                self.balas.remove(bala)
-
-        # Revisar cambio de sala después de mover al jugador
-        self.revisar_cambio_sala()
+            if evento.type == pygame.MOUSEBUTTONDOWN and evento.button == 1:
+                pos_mouse = pygame.mouse.get_pos()
+                if self.rect_btn_reiniciar.collidepoint(pos_mouse):
+                    self.manager.cambiar_escena(EscenaJuego(self.manager))
+                    return
+                elif self.rect_btn_salir.collidepoint(pos_mouse):
+                    pygame.quit()
+                    sys.exit()
 
     def dibujar(self):
-        # El mapa dibuja fondo, obstáculos, enemigos y trampilla
-        self.mapa.dibujar(self.manager.pantalla)
+        self.manager.pantalla.fill((20, 15, 15))
 
-        # Dibujar jugador
-        self.jugador.dibujar(self.manager.pantalla)
+        if self.fondo_endgame:
+            self.manager.pantalla.blit(self.fondo_endgame, (0, 0))
 
-        # Dibujar balas
-        for bala in self.balas:
-            bala.dibujar(self.manager.pantalla)
+        if os.path.exists(self.manager.ruta_fuente):
+            fuente_fin = pygame.font.Font(self.manager.ruta_fuente, 20)
+        else:
+            fuente_fin = pygame.font.SysFont("sans", 18, bold=True)
+
+        # Subsuperficie para puntos
+        surf_puntos = fuente_fin.render(str(Estadisticas.puntaje_final), True, (color_texto))
+        surf_puntos_rotada = pygame.transform.rotate(surf_puntos, -5)
+        self.manager.pantalla.blit(surf_puntos_rotada, (355, 455))
+
+        # Botones
+        ancho_b, alto_b = 180, 40
+        pos_mouse = pygame.mouse.get_pos()
+
+        # Determinación de color dinámico para el botón de reiniciar (Fin del juego)
+        if self.rect_btn_reiniciar.collidepoint(pos_mouse):
+            color_fondo_reiniciar = color_interaccion_boton
+        else:
+            color_fondo_reiniciar = color_boton
+
+        # Determinación de color dinámico para el botón de salir (Fin del juego)
+        if self.rect_btn_salir.collidepoint(pos_mouse):
+            color_fondo_salir_fin = color_interaccion_boton
+        else:
+            color_fondo_salir_fin = color_boton
+
+        # Botón izquierdo: Jugar nuevamente
+        surf_btn1 = pygame.Surface((ancho_b, alto_b), pygame.SRCALPHA)
+        pygame.draw.rect(surf_btn1, (color_fondo_reiniciar), (0, 0, ancho_b, alto_b), border_radius=3)
+        pygame.draw.rect(surf_btn1, (140, 124, 128), (0, 0, ancho_b, alto_b), 2, border_radius=3)
+        texto_btn1 = fuente_fin.render("Volver a Jugar", True, (color_texto))
+        surf_btn1.blit(texto_btn1, texto_btn1.get_rect(center=(ancho_b // 2, alto_b // 2)))
+
+        # Botón derecho: Salir del juego
+        surf_btn2 = pygame.Surface((ancho_b, alto_b), pygame.SRCALPHA)
+        pygame.draw.rect(surf_btn2, (color_fondo_salir_fin), (0, 0, ancho_b, alto_b), border_radius=3)
+        pygame.draw.rect(surf_btn2, (140, 124, 128), (0, 0, ancho_b, alto_b), 2, border_radius=3)
+        texto_btn2 = fuente_fin.render("Salir del juego", True, (color_texto))
+        surf_btn2.blit(texto_btn2, texto_btn2.get_rect(center=(ancho_b // 2, alto_b // 2)))
+
+        surf_btn1_rotado = pygame.transform.rotate(surf_btn1, -5)
+        surf_btn2_rotado = pygame.transform.rotate(surf_btn2, -5)
+
+        # Posicionamiento ajustado con la hoja (Coordenadas absolutas de pantalla)
+        pos_b1_x, pos_b1_y = 175, 489
+        pos_b2_x, pos_b2_y = 370, 507
+
+        # hitbox del boton ajustadas
+        self.rect_btn_reiniciar = surf_btn1_rotado.get_rect(topleft=(pos_b1_x, pos_b1_y))
+        self.rect_btn_salir = surf_btn2_rotado.get_rect(topleft=(pos_b2_x, pos_b2_y))
+
+        self.manager.pantalla.blit(surf_btn1_rotado, (pos_b1_x, pos_b1_y))
+        self.manager.pantalla.blit(surf_btn2_rotado, (pos_b2_x, pos_b2_y))

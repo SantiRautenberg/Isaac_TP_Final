@@ -1,25 +1,25 @@
 # personaje.py
-from base import Base # Importa clase abstracta
+from base import Base
 from estadistica import Estadisticas
+from audio import AudioManager
 import pygame
 import os
 
-inventario = {} # va a necesitar agregarle los items, probablemente no va acá !!!
+inventario = {} 
 
 class Jugador(Base):
-    #nombre, vida, vel_movimiento, daño, proyectil, rango,
     def __init__(self, x, y):
         super().__init__(x, y)
         self.nombre = "Isaac"   # solo está Isaac, sino se pasa el nombre como argumento
-        self.__vida = 3
-        self.__vel_movimiento = 5
+        self.__vida = 6
+        self.__vel_movimiento = 4
         self.__daño = 1
         self.proyectil = None
         self.rango = 100
         self.__vivo = True
 
         # Escalado uniforme para todos los sprites del personaje
-        self.dimensiones = (75, 75)
+        self.dimensiones = (60, 60)
 
         # Ruta
         ruta_carpeta = os.path.join(os.path.dirname(__file__), "imagenes", "jugador") # Obtiene la ruta del directorio actual
@@ -37,7 +37,7 @@ class Jugador(Base):
         self.animacion_arriba = []
         self.animacion_abajo = []
         
-        # -------------------- CORRECCIÓN: CARGA INDIVIDUAL POR CARPETAS --------------------
+        
         # Recorremos del 0 al 3 para cargar secuencialmente cada frame independiente de las 3 carpetas
         for i in range(4):
             # 1. Carga de animación horizontal (Caminata Base)
@@ -60,7 +60,7 @@ class Jugador(Base):
         self.esta_moviendose = False
         self.indice_animacion = 0
         self.tiempo_ultimo_frame = 0
-        self.velocidad_animacion = 130  # ms de cada paso
+        self.velocidad_animacion = 110  # ms de cada paso
 
         # sprite por defecto (Sprite de mirar hacia abajo)
         self.sprite = self.sprites_direcciones[self.direccion_actual]
@@ -78,7 +78,6 @@ class Jugador(Base):
             else:  # ABAJO
                 animacion_activa = self.animacion_abajo
 
-            # Control del reloj: Avanza el índice de la animación según la lista activa
             if tiempo_actual - self.tiempo_ultimo_frame > self.velocidad_animacion:
                 self.indice_animacion = (self.indice_animacion + 1) % len(animacion_activa)
                 self.tiempo_ultimo_frame = tiempo_actual
@@ -86,7 +85,7 @@ class Jugador(Base):
             # Se ejecuta en cada frame del juego 
             self.sprite = animacion_activa[self.indice_animacion]
                 
-            # Como tu tira por defecto mira a la izquierda, aplicamos flip al ir a la DERECHA
+            # La tira por defecto de movimiento mira a la izquierda, la invertimos para la derecha
             if self.direccion_actual == "DERECHA":
                 self.sprite = pygame.transform.flip(self.sprite, True, False)
         else:
@@ -106,36 +105,35 @@ class Jugador(Base):
     def get_daño(self):
         return self.__daño
     
-    # Getter de estado del jugador (vivo o muerto)
     def get_estado(self):
         return self.__vivo
     
-    # Setters con validación
     def set_vida(self,valor):
         self.__vida = valor
         if self.__vida<0:
             self.__vida=0
         if self.__vida==0:
             self.morir()
-        #if self.__vida>=10:
-            # self.__vida=10
-            # acá no puede recoger más vidas (items)
+        if self.__vida>=10:
+            self.__vida=10
+            # Acá no puede recoger más vidas (items)
         
     def set_velMovimiento(self,valor):
-        self.__vel_movimiento += valor #del item
+        self.__vel_movimiento += valor 
 
     def set_daño(self, valor):
-        self.__daño += valor #del item
+        self.__daño += valor 
     
     # ------------ Métodos del personaje ------------
-    def curarse(self, corazon): #aca recibe al item
+    def curarse(self, corazon): 
         sumar_vida = self.__vida + corazon
         self.set_vida(sumar_vida)
 
-    def recibirDaño(self, daño_recibido): #cómo lo recibe?
+    def recibirDaño(self, daño_recibido): 
         restar_vida = self.__vida - daño_recibido
         self.set_vida(restar_vida)
         Estadisticas.sumar_daño_recibido(daño_recibido)
+        AudioManager.play_sfx("daño_isaac")
 
     def morir(self):
         self.__vivo = False
@@ -145,7 +143,7 @@ class Jugador(Base):
         dx = 0
         dy = 0
 
-        # 1. CAPTURA DE INTENCIÓN DE MOVIMIENTO
+        # Logica de movimiento
         if keys[pygame.K_a]:
             dx = -self.__vel_movimiento
         elif keys[pygame.K_d]:
@@ -156,7 +154,6 @@ class Jugador(Base):
         elif keys[pygame.K_s]:
             dy = self.__vel_movimiento
 
-        # 2. PROCESAMIENTO LOGICO DE DIRECCIÓN Y ANIMACIÓN
         if dx != 0 or dy != 0:
             self.esta_moviendose = True
        
@@ -172,7 +169,7 @@ class Jugador(Base):
                 else:
                     self.direccion_actual = "DERECHA"
                         
-        # 3. PRUEBA DE COLISIONES Y ACTUALIZACIÓN DE COORDENADAS FISICAS
+        # Control de colisiones 
         # Probar movimiento simulado en el eje X
         nuevo_rect = self.rect.copy()
         nuevo_rect.x += dx
@@ -187,7 +184,6 @@ class Jugador(Base):
             self.y += dy
             self.rect.y = self.y
 
-        # Sincronizamos los cambios de coordenadas con los gráficos del personaje
         self.actualizarAnimacion()
 
     def dibujar(self, pantalla):
@@ -195,5 +191,3 @@ class Jugador(Base):
 
     def actualizar(self, pantalla, keys, mapa):
         self.moverse(keys, mapa)
-        #self.recibirDaño()
-        #self.curarse() ??

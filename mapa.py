@@ -5,6 +5,7 @@ import os
 
 from base import Base
 from enemigo import Enemigo, EnemigoDisparador
+from jefes import JefePiso1, JefePiso2, JefePiso3
 
 
 ANCHO_PANTALLA = 800
@@ -389,7 +390,10 @@ class Sala(Base):
 
         if jugador is not None:
             for enemigo in self.enemigos[:]:
-                enemigo.actualizar(jugador, lista_balas)
+                if isinstance(enemigo, EnemigoDisparador):
+                    enemigo.actualizar(jugador, lista_balas)
+                else:
+                    enemigo.actualizar(jugador, lista_balas, self.enemigos)
 
                 if enemigo.vida <= 0:
                     self.enemigos.remove(enemigo)
@@ -472,6 +476,7 @@ class Piso(Base):
 
         self.salas = {}
         self.sala_actual = None
+        self.posiciones_salas = {}
 
         self.crear_piso()
 
@@ -507,30 +512,92 @@ class Piso(Base):
             texturas=self.texturas
         )
 
-        # Enemigo temporal que funciona como jefe.
-        # Cuando tengan clase Jefe, reemplazan esta línea.
         self.salas["boss"].agregar_enemigo(
-            Enemigo(400, 250, 1, 10, 1)
+            self.crear_jefe_del_piso()
         )
 
-        # Conexiones
-        self.salas["comun_1"].conectar("DERECHA", "comun_2")
-        self.salas["comun_1"].conectar("ABAJO", "comun_3")
-
-        self.salas["comun_2"].conectar("IZQUIERDA", "comun_1")
-        self.salas["comun_2"].conectar("DERECHA", "tesoro")
-
-        self.salas["comun_3"].conectar("ARRIBA", "comun_1")
-        self.salas["comun_3"].conectar("DERECHA", "comun_4")
-
-        self.salas["comun_4"].conectar("IZQUIERDA", "comun_3")
-        self.salas["comun_4"].conectar("DERECHA", "boss")
-
-        self.salas["tesoro"].conectar("IZQUIERDA", "comun_2")
-
-        self.salas["boss"].conectar("IZQUIERDA", "comun_4")
+        self.generar_conexiones_aleatorias()
 
         self.sala_actual = self.salas["comun_1"]
+
+    def generar_conexiones_aleatorias(self):
+        direcciones = {
+            "ARRIBA": (0, -1),
+            "ABAJO": (0, 1),
+            "IZQUIERDA": (-1, 0),
+            "DERECHA": (1, 0)
+        }
+
+        coords = [(0, 0)]
+
+        while len(coords) < 6:
+            origen = random.choice(coords)
+            opciones = list(direcciones.values())
+            random.shuffle(opciones)
+
+            for dx, dy in opciones:
+                nueva = (origen[0] + dx, origen[1] + dy)
+
+                if nueva not in coords:
+                    coords.append(nueva)
+                    break
+
+        inicio = (0, 0)
+        posibles_especiales = [coord for coord in coords if coord != inicio]
+
+        coord_boss = max(
+            posibles_especiales,
+            key=lambda coord: abs(coord[0] - inicio[0]) + abs(coord[1] - inicio[1])
+        )
+
+        posibles_tesoro = [
+            coord for coord in posibles_especiales
+            if coord != coord_boss
+        ]
+        coord_tesoro = random.choice(posibles_tesoro)
+
+        coords_comunes = [
+            coord for coord in coords
+            if coord not in (inicio, coord_boss, coord_tesoro)
+        ]
+        random.shuffle(coords_comunes)
+
+        coord_a_sala = {
+            inicio: "comun_1",
+            coord_boss: "boss",
+            coord_tesoro: "tesoro"
+        }
+
+        nombres_comunes = ["comun_2", "comun_3", "comun_4"]
+
+        for nombre, coord in zip(nombres_comunes, coords_comunes):
+            coord_a_sala[coord] = nombre
+
+        self.posiciones_salas = {
+            nombre: coord
+            for coord, nombre in coord_a_sala.items()
+        }
+
+        for coord, nombre_sala in coord_a_sala.items():
+            sala = self.salas[nombre_sala]
+
+            for direccion, (dx, dy) in direcciones.items():
+                vecina = (coord[0] + dx, coord[1] + dy)
+
+                if vecina in coord_a_sala:
+                    sala.conectar(direccion, coord_a_sala[vecina])
+
+    def crear_jefe_del_piso(self):
+        if self.numero == 1:
+            return JefePiso1(360, 250)
+
+        if self.numero == 2:
+            return JefePiso2(360, 250)
+
+        if self.numero == 3:
+            return JefePiso3(360, 250)
+
+        return JefePiso1(360, 250)
 
     def crear_sala_comun(self, nombre):
         sala = Sala(
