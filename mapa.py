@@ -88,39 +88,22 @@ def limpiar_sprite(superficie, tamanio_final, tolerancia=55):
 class TexturasMapa:
     def __init__(self):
         ruta_mapa = os.path.join(os.path.dirname(__file__), "imagenes", "mapa")
-
-        # Fondo tutorial
-        self.sala_tutorial = self.cargar_imagen(
-            os.path.join(ruta_mapa, "basement_guia.png")
-        )
-        
+        self.sala_tutorial = self.cargar_imagen(os.path.join(ruta_mapa, "basement_guia.png"))
         ruta_sala_comun = os.path.join(ruta_mapa, "sala_comun.png")
-
 
         self.sala_comun = self.cargar_imagen(ruta_sala_comun)
 
-        # Sprites
-        self.puertas_sheet = self.cargar_imagen(
-            os.path.join(ruta_mapa, "puertas_0.png")
-        )
+    
+        self.puertas_sheet = self.cargar_imagen(os.path.join(ruta_mapa, "puertas_0.png"))
+        self.roca = self.cargar_imagen(os.path.join(ruta_mapa, "roca_0.png"))
+        self.trampilla_cerrada = self.cargar_imagen(os.path.join(ruta_mapa, "escotilla_cerrada.png"))
+        self.trampilla_abierta = self.cargar_imagen(os.path.join(ruta_mapa, "escotilla_abierta.png"))
 
-        self.roca = self.cargar_imagen(
-            os.path.join(ruta_mapa, "roca_0.png")
-        )
-
-        self.trampilla_cerrada = self.cargar_imagen(
-            os.path.join(ruta_mapa, "escotilla_cerrada.png")
-        )
-
-        self.trampilla_abierta = self.cargar_imagen(
-            os.path.join(ruta_mapa, "escotilla_abierta.png")
-        )
-
-        # Fondos ya escalados
+        
         self.sala_tutorial_fondo = None
         self.sala_comun_fondo = None
 
-        # Diccionario de puertas
+
         self.puertas = {
             "ARRIBA": None,
             "ABAJO": None,
@@ -128,7 +111,7 @@ class TexturasMapa:
             "DERECHA": None
         }
 
-        # Procesar sprites chicos
+
         if self.roca is not None:
             self.roca = limpiar_sprite(self.roca, (TAM_ROCA, TAM_ROCA), tolerancia=60)
 
