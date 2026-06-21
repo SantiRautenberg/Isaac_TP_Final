@@ -67,6 +67,12 @@ class Enemigo(Base):
             if self.rect.colliderect(jugador.rect):
                 self.hacer_daño_al_jugador(jugador)
 
+    def recibir_dano(self, cantidad):
+       self.vida -= cantidad
+
+    def esta_muerto(self):
+       return self.vida <= 0
+
     def dibujar(self, pantalla):
         centro_x = int(self.x + self.ancho / 2)
         centro_y = int(self.y + self.alto / 2)
