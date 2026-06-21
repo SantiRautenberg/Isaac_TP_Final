@@ -16,10 +16,10 @@ class JefeBase(Enemigo):
         self.color = color
 
     def dibujar_barra_vida(self, pantalla):
-        ancho_barra = 450
+        ancho_barra = 375
         alto_barra = 20
-        x = 250
-        y = 20
+        x = 200
+        y = 550
 
         porcentaje = max(0, self.vida / self.vida_maxima)
 
@@ -38,16 +38,16 @@ class JefeBase(Enemigo):
 
 class JefePiso1(JefeBase):
     def __init__(self, x, y):
-        super().__init__(x, y, velocidad=1.6, vida=30, daño=1, color=(180, 40, 40))
+        super().__init__(x, y, velocidad=1.4, vida=14, daño=2, color=(180, 40, 40))
 
-    def actualizar(self, jugador, lista_balas=None, lista_enemigos=None):
+    def actualizar(self, jugador, lista_balas=None, lista_enemigos=None):   
         self.seguir_jugador(jugador)
         self.colision_con_jugador(jugador)
 
 
 class JefePiso2(JefeBase):
     def __init__(self, x, y):
-        super().__init__(x, y, velocidad=2, vida=40, daño=1, color=(150, 60, 180))
+        super().__init__(x, y, velocidad=2, vida=18, daño=2, color=(150, 60, 180))
 
         self.direccion_x = 1
         self.direccion_y = 1
@@ -89,7 +89,7 @@ class JefePiso2(JefeBase):
 
 class JefePiso3(JefeBase):
     def __init__(self, x, y):
-        super().__init__(x, y, velocidad=1, vida=55, daño=1, color=(40, 40, 190))
+        super().__init__(x, y, velocidad=1, vida=22, daño=2, color=(40, 40, 190))
 
         self.cooldown_disparo = 900
         self.ultimo_disparo = 0

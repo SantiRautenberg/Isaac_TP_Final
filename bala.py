@@ -9,7 +9,7 @@ class Bala(Base):
         super().__init__(x, y)
         self.dire_x = dire_x
         self.dire_Y = dire_Y
-        self.bala_vel = 10
+        self.bala_vel = 12
         self.daño = daño # lo recibe del jugador
         self.rect = pygame.Rect(self.x, self.y, 10, 10)
         Estadisticas.sumar_balas_disparadas()

@@ -17,10 +17,10 @@ class Enemigo(Base):
         self.alto = 40
         self.rect = pygame.Rect(self.x, self.y, self.ancho, self.alto)
 
-        self.cooldown_daño = 700
+        self.cooldown_daño = 450
         self.ultimo_hit = 0
 
-        self.dimensiones = (60, 70)
+        self.dimensiones = (90, 90)
 
         ruta_raiz = os.path.dirname(os.path.abspath(__file__))
         ruta_carpeta = os.path.join(ruta_raiz, "imagenes", "enemigos", "perseguidor")
@@ -150,9 +150,9 @@ class Enemigo(Base):
 
 class EnemigoDisparador(Enemigo):
     def __init__(self, x, y):
-        super().__init__(x, y, velocidad=0, vida=5, daño=1)
+        super().__init__(x, y, velocidad=0, vida=3, daño=1)
 
-        self.cooldown_disparo = 1500
+        self.cooldown_disparo = 1750
         self.ultimo_disparo = 0
 
         ruta_raiz = os.path.dirname(os.path.abspath(__file__))

@@ -9,7 +9,7 @@ class BalaEnemigo(Bala):
         super().__init__(x, y, dire_x, dire_y, daño)
 
         # Stats propias
-        self.bala_vel = 10
+        self.bala_vel = 8
         self.daño = daño
 
         # Estadísticas separadas
