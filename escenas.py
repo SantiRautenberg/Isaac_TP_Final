@@ -142,7 +142,8 @@ class EscenaJuego:
         self.manager = manager_escenas
         self.jugador = Jugador(200, 200)
         self.mapa = Mapa()
-        self.balas = []
+        self.balas_jugador = []
+        self.balas_enemigos = []
         self.delay_disparo = 500
         self.ultimo_disparo = 0
 
@@ -210,46 +211,63 @@ class EscenaJuego:
 
         if keys[pygame.K_RIGHT] and tiempo_actual - self.ultimo_disparo > self.delay_disparo:
             bala = Bala(self.jugador.x + 50, self.jugador.y + 25, 1, 0, daño=self.jugador.get_daño())
-            self.balas.append(bala)
+            self.balas_jugador.append(bala)
             self.jugador.direccion_actual = "DERECHA"
             AudioManager.play_sfx("disparo")
             self.ultimo_disparo = tiempo_actual
 
         elif keys[pygame.K_LEFT] and tiempo_actual - self.ultimo_disparo > self.delay_disparo:
             bala = Bala(self.jugador.x, self.jugador.y + 25, -1, 0, daño=self.jugador.get_daño())
-            self.balas.append(bala)
+            self.balas_jugador.append(bala)
             self.jugador.direccion_actual = "IZQUIERDA"
             AudioManager.play_sfx("disparo")
             self.ultimo_disparo = tiempo_actual
 
         elif keys[pygame.K_UP] and tiempo_actual - self.ultimo_disparo > self.delay_disparo:
             bala = Bala(self.jugador.x + 25, self.jugador.y, 0, -1, daño=self.jugador.get_daño())
-            self.balas.append(bala)
+            self.balas_jugador.append(bala)
             self.jugador.direccion_actual = "ARRIBA"
             AudioManager.play_sfx("disparo")
             self.ultimo_disparo = tiempo_actual
 
         elif keys[pygame.K_DOWN] and tiempo_actual - self.ultimo_disparo > self.delay_disparo:
             bala = Bala(self.jugador.x + 25, self.jugador.y + 50, 0, 1, daño=self.jugador.get_daño())
-            self.balas.append(bala)
+            self.balas_jugador.append(bala)
             self.jugador.direccion_actual = "ABAJO"
             AudioManager.play_sfx("disparo")
             self.ultimo_disparo = tiempo_actual
 
         self.jugador.actualizar(self.manager.pantalla, keys, self.mapa)
-        self.mapa.actualizar(self.manager.pantalla, self.jugador, self.balas)
+        self.mapa.actualizar(self.manager.pantalla, self.jugador, self.balas_enemigos)
 
         # Control de choques de las lagrimas contra las paredes o rocas
-        for bala in self.balas[:]:
+        for bala in self.balas_jugador[:]:
             bala.actualizar(self.manager.pantalla)
             rect_bala = pygame.Rect(bala.x, bala.y, 12, 12)
-            
-            if self.mapa.colision(rect_bala):
-                self.balas.remove(bala)
-                AudioManager.play_sfx("lagrima_impacto")
-            elif bala.x < 0 or bala.x > 800 or bala.y < 0 or bala.y > 600:
-                self.balas.remove(bala)
 
+            # colisión con paredes
+            if self.mapa.colision(rect_bala):
+                self.balas_jugador.remove(bala)
+                AudioManager.play_sfx("lagrima_impacto")
+            # fuera de pantalla
+            elif bala.x < 0 or bala.x > 800 or bala.y < 0 or bala.y > 600:
+                self.balas_jugador.remove(bala)
+        self.revisar_cambio_sala()
+
+        for bala in self.balas_enemigos[:]:
+            bala.actualizar(self.manager.pantalla)
+            rect_bala = pygame.Rect(bala.x, bala.y, 12, 12)
+            # choque contra jugador
+            if rect_bala.colliderect(self.jugador.rect):
+               self.jugador.recibirDaño(bala.daño)
+               Estadisticas.sumar_balas_enemigo_impactadas()
+               self.balas_enemigos.remove(bala)
+            # choque con paredes
+            elif self.mapa.colision(rect_bala):
+                self.balas_enemigos.remove(bala)
+            # fuera de pantalla
+            elif bala.x < 0 or bala.x > 800 or bala.y < 0 or bala.y > 600:
+                self.balas_enemigos.remove(bala)
         self.revisar_cambio_sala()
 
     def dibujar(self):
@@ -257,7 +275,10 @@ class EscenaJuego:
         self.mapa.dibujar(subsuperficie_juego)
         self.jugador.dibujar(subsuperficie_juego)
 
-        for bala in self.balas:
+        for bala in self.balas_jugador:
+            bala.dibujar(subsuperficie_juego)
+
+        for bala in self.balas_enemigos:
             bala.dibujar(subsuperficie_juego)
 
         self.interfaz.dibujar_hud_juego(self.manager.pantalla, self.jugador, self.mapa)
