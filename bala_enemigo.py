@@ -10,9 +10,10 @@ class BalaEnemigo(Bala):
 
         # Stats propias
         self.bala_vel = 8
+        # velocidad propia
+        self.velocidad = 5
+        # daño propio
         self.daño = daño
-
-        # Estadísticas separadas
         Estadisticas.sumar_balas_enemigo_disparadas()
 
     def dibujar(self, pantalla):

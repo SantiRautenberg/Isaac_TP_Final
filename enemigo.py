@@ -6,12 +6,15 @@ import math
 import os
 
 class Enemigo(Base):
-    def __init__(self, x, y, velocidad=2, vida=3, daño=1):
+    def __init__(self, x, y, velocidad=2, vida=5, daño=1):
         super().__init__(x, y)
 
         self.velocidad = velocidad
         self.vida = vida
         self.daño = daño
+
+        self.delay_entrada = 1000
+        self.tiempo_spawn = pygame.time.get_ticks()
 
         self.ancho = 40
         self.alto = 40
@@ -47,6 +50,13 @@ class Enemigo(Base):
 
         # Sprite por defecto por si las moscas
         self.sprite = self.anim_frente[0] if self.anim_frente else None
+
+    def puede_actuar(self):
+        tiempo_actual = pygame.time.get_ticks()
+        return tiempo_actual - self.tiempo_spawn >= self.delay_entrada
+
+    def resetear_delay(self):
+        self.tiempo_spawn = pygame.time.get_ticks()
 
     def seguir_jugador(self, jugador):
         dx = jugador.x - self.x
@@ -128,7 +138,7 @@ class Enemigo(Base):
                 self.hacer_daño_al_jugador(jugador)
 
     def recibir_dano(self, cantidad):
-       self.vida -= cantidad
+        self.vida -= cantidad
 
     def esta_muerto(self):
        return self.vida <= 0
@@ -143,6 +153,9 @@ class Enemigo(Base):
             pygame.draw.circle(pantalla, (120, 0, 0), (centro_x, centro_y), 9)
 
     def actualizar(self, jugador, *args):
+        # Espera antes de activarse
+        if not self.puede_actuar():
+            return
         self.seguir_jugador(jugador)
         self.colision_con_jugador(jugador)
         self.actualizar_animacion()
@@ -226,6 +239,9 @@ class EnemigoDisparador(Enemigo):
                 self.sprite = self.anim_frente[0]
 
     def actualizar(self, jugador, lista_balas=None):
+        # Espera antes de activarse
+        if not self.puede_actuar():
+            return 
         self.colision_con_jugador(jugador)
         self.disparar(jugador, lista_balas)
         self.actualizar_animacion_disparador(jugador)
