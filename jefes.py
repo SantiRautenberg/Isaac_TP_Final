@@ -2,7 +2,7 @@
 import pygame
 import math
 from enemigo import Enemigo
-from bala import Bala
+from bala_enemigo import BalaEnemigo
 
 
 class JefeBase(Enemigo):
@@ -113,7 +113,7 @@ class JefePiso3(JefeBase):
         dx /= distancia
         dy /= distancia
 
-        bala = Bala(
+        bala = BalaEnemigo(
             self.x + self.ancho / 2,
             self.y + self.alto / 2,
             dx,

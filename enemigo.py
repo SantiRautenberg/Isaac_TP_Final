@@ -1,6 +1,6 @@
 # enemigo.py
 from base import Base
-from bala import Bala
+from bala_enemigo import BalaEnemigo
 import pygame
 import math
 import os
@@ -127,6 +127,12 @@ class Enemigo(Base):
             if self.rect.colliderect(jugador.rect):
                 self.hacer_daño_al_jugador(jugador)
 
+    def recibir_dano(self, cantidad):
+       self.vida -= cantidad
+
+    def esta_muerto(self):
+       return self.vida <= 0
+
     def dibujar(self, pantalla):
         if self.sprite:
             pantalla.blit(self.sprite, (self.x - (self.dimensiones[0] - self.ancho) // 2, self.y - (self.dimensiones[1] - self.alto)))
@@ -188,7 +194,7 @@ class EnemigoDisparador(Enemigo):
         dx /= distancia
         dy /= distancia
 
-        bala = Bala(
+        bala = BalaEnemigo(
             self.x + self.ancho / 2,
             self.y + self.alto / 2,
             dx,

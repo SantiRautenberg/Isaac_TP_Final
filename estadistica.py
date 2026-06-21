@@ -1,3 +1,4 @@
+# estadistica
 from datetime import datetime, timedelta
 import pygame
 import json
@@ -77,6 +78,9 @@ class Estadisticas:
 
     balas_disparadas = 0
     balas_efectivas = 0
+
+    balas_enemigo_disparadas = 0
+    balas_enemigo_impactadas = 0
 
     # Contadores de enemigos
     enemigos_instanciados = 0
@@ -159,6 +163,14 @@ class Estadisticas:
     def sumar_items_obtenidos(cls,nombre):
         cls.items_obtenidos += 1
         cls.detalle_items[nombre] += 1
+
+    @classmethod
+    def sumar_balas_enemigo_disparadas(cls):
+        cls.balas_enemigo_disparadas += 1
+
+    @classmethod
+    def sumar_balas_enemigo_impactadas(cls):
+        cls.balas_enemigo_impactadas += 1
 
     # ---------- Método para registro con decorador ----------
     @classmethod
