@@ -1,6 +1,6 @@
 # enemigo.py
 from base import Base
-from bala import Bala
+from bala_enemigo import BalaEnemigo
 import pygame
 import math
 
@@ -105,7 +105,7 @@ class EnemigoDisparador(Enemigo):
         dx /= distancia
         dy /= distancia
 
-        bala = Bala(
+        bala = BalaEnemigo(
             self.x + self.ancho / 2,
             self.y + self.alto / 2,
             dx,
