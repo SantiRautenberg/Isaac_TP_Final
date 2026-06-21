@@ -28,9 +28,9 @@ class Interfaz:
         pygame.draw.rect(pantalla, (15, 15, 20), (0, 0, self.resolucion[0], self.alto_hud))
         pygame.draw.rect(pantalla, (60, 60, 65), (0, self.alto_hud - 2, self.resolucion[0], 2))
 
-        # Salud dinamica
+        # Salud dinamica real segon la vida max
         vida_actual = jugador.get_vida()
-        max_contenedores = 3
+        max_contenedores = (jugador.get_vida_max() + 1) // 2 
         pos_x_corazon = 50
         pos_y_corazon = self.alto_hud // 2 - 5
 
@@ -57,14 +57,22 @@ class Interfaz:
 
             pos_x_corazon += 35
 
-        # Presentacion del puntaje en tiempo real
+        # fuentes del hud
         if os.path.exists(self.ruta_fuente):
             fuente_hud = pygame.font.Font(self.ruta_fuente, 16)
         else:
             fuente_hud = pygame.font.SysFont("sans", 16, bold=True)
 
-        texto_score = fuente_hud.render(f"PUNTAJE: {Estadisticas.puntaje_final}", True, (240, 240, 245))
-        pantalla.blit(texto_score, (260, self.alto_hud // 2 - 10))
+        # grilla simetrica de stats modificables por items
+        texto_atk = fuente_hud.render(f"ATK: {jugador.get_daño()}", True, (240, 240, 245))
+        texto_vel = fuente_hud.render(f"VEL: {jugador.get_velMovimiento()}", True, (240, 240, 245))
+        texto_hp_max = fuente_hud.render(f"HP MAX: {jugador.get_vida_max()}", True, (240, 240, 245))
+        texto_delay = fuente_hud.render(f"DELAY: {jugador.get_delay_disparo()}ms", True, (240, 240, 245))
+
+        pantalla.blit(texto_atk, (260, self.alto_hud // 2 - 20))
+        pantalla.blit(texto_vel, (260, self.alto_hud // 2 + 5))
+        pantalla.blit(texto_hp_max, (380, self.alto_hud // 2 - 20))
+        pantalla.blit(texto_delay, (380, self.alto_hud // 2 + 5))
 
         # Minimapa
         piso_actual = mapa.piso_actual
@@ -133,4 +141,4 @@ class Interfaz:
                         color_bloque = (245, 245, 250)
 
                     pygame.draw.rect(pantalla, color_bloque, (bx, by, 26, 19))
-                    pygame.draw.rect(pantalla, (10, 10, 15), (bx, by, 26, 19), 1)    
+                    pygame.draw.rect(pantalla, (10, 10, 15), (bx, by, 26, 19), 1)

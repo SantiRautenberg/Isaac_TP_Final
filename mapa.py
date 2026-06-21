@@ -407,6 +407,8 @@ class Sala(Base):
             if self.jefe_guardado is None and len(self.enemigos) == 0:
                 if not self.trampilla.abierta:
                     self.trampilla.abrir()
+                    
+                    AudioManager.stop_music()
 
     def al_entrar(self, tiempo_actual):
         for enemigo in self.enemigos:
@@ -708,6 +710,8 @@ class Piso(Base):
                     AudioManager.play_sfx("spawn_enemigos")
                     self.sala_actual.agregar_enemigo(self.sala_actual.jefe_guardado)
                     self.sala_actual.jefe_guardado = None
+                
+                AudioManager.play_music("musica_jefe.mp3")    
 
             self.sala_actual.actualizar(pantalla, jugador, balas)
 

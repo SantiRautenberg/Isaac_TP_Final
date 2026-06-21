@@ -119,7 +119,7 @@ class Estadisticas:
         cls.total_daño_recibido += valor
     
     @classmethod
-    def calcular_puntaje(cls, jugador, estado):     # Se llama al finalizar la partida (victoria, derrota, esc)
+    def calcular_puntaje(cls, jugador, estado):   # Se llama al finalizar la partida (victoria, derrota, esc)
         cls.cargar_estado_final(jugador, estado)
         puntaje_base = cls.vida_final + cls.balas_efectivas + (cls.enemigos_asesinados * 10) - cls.total_daño_recibido
         # porcentajes de efectividad
@@ -139,7 +139,7 @@ class Estadisticas:
             puntaje_final = puntaje_base
         else:
             puntaje_final = puntaje_base / 2
-        return max(0,int(puntaje_final)) # asegura que el puntaje no sea negativo y sea entero
+        return max(0,int(puntaje_final)) # Asegura que el puntaje no sea negativo y sea entero
     
     @classmethod
     def sumar_enemigos_instanciados(cls,nombre):
@@ -180,7 +180,7 @@ class Estadisticas:
             "Estadísticas jugador":
             {   
                 "Nombre": cls.nombre_jugador,
-                "Jugador vivo": cls.estado_final,
+                "Jugador vivo": cls.jugador_vivo,
                 "Vida inicial": cls.vida_inicial,
                 "Vida final": cls.vida_final,
                 "Daño base": cls.daño_base,
