@@ -23,16 +23,18 @@ class AudioManager:
             "daño_isaac": self._cargar_variaciones_sfx("daño", 3, "wav"),
             "muerte_isaac": self._cargar_variaciones_sfx("muerte", 3, "wav"),
             "muerte_enemigo": self._cargar_sfx("muerte.wav"),
-            "lagrima_impacto": self._cargar_sfx("lagrima_impacto.mp3")
+            "lagrima_impacto": self._cargar_sfx("lagrima_impacto.mp3"),
+            "jugar_de_nuevo": self._cargar_sfx("jugar_de_nuevo.mp3"),
+            "iniciar_juego": self._cargar_sfx("iniciar_juego.wav")
         }
         
         # Ajustamos volúmenes iniciales para los efectos de sonido
         for valor in self.sonidos_sfx.values():
             if isinstance(valor, list):
                 for sfx in valor:
-                    if sfx: sfx.set_volume(0.4)
+                    if sfx: sfx.set_volume(0.15)
             elif valor:
-                valor.set_volume(0.4)
+                valor.set_volume(0.15)
 
         # Guardamos la referencia de la instancia activa de forma estática
         AudioManager.instancia = self
@@ -71,22 +73,6 @@ class AudioManager:
     def reproducir_musica(self, nombre_archivo, volumen=0.2, bucle=-1):
         # Buscamos de forma automatizada en qué subcarpeta pusiste la música (.mp3)
         archivo_completo = self._buscar_en_subcarpetas(nombre_archivo)
-        
-        # ESCÁNER DE DIAGNÓSTICO: Si no se encuentra en ninguna subcarpeta, inspecciona el disco
-        if not archivo_completo:
-            print(f"\n[Aviso Audio] No se encontró el archivo '{nombre_archivo}' en ninguna subcarpeta.")
-            print("----------------------------------------------------------------")
-            print("Estructura real detectada por Python en tu carpeta 'sonidos/':")
-            
-            for subcarpeta in self.subcarpetas:
-                ruta_verificar = os.path.join(self.ruta_sonidos, subcarpeta)
-                if os.path.exists(ruta_verificar):
-                    nombre_visible = subcarpeta if subcarpeta != "" else "Raíz de sonidos"
-                    print(f"📁 {nombre_visible} contiene: {os.listdir(ruta_verificar)}")
-                    
-            print("\n👉 CONSEJO: Asegurate de que el nombre coincida EXACTAMENTE con las mayúsculas/minúsculas y su extensión.")
-            print("----------------------------------------------------------------\n")
-            return
 
         try:
             pygame.mixer.music.load(archivo_completo)
