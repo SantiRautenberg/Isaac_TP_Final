@@ -4,15 +4,15 @@ import pygame
 import json
 import os
 
-#Decorador para guardar estadísticas en un archivo json.
+# Decorador para guardar estadísticas en un archivo json.
 def registros(func):
     def wrapper(*args,**kwargs):
         print("Guardando estadísticas de la partida...")
 
         dict_stats = func(*args,**kwargs)
-        archivo = "registro_partidas_isaac_argento.json"
-        clave = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")    # clave de partida
-        partidas = {} # Inicio un diccionario vacío
+        archivo = "registro_partidas.json"
+        clave = datetime.now().strftime("%Y-%m-%d_%H:%M:%S") 
+        partidas = {} 
 
         # Si existe el archivo reasigna a partidas el diccionario guardado
         if os.path.exists(archivo):
@@ -52,7 +52,7 @@ def registros(func):
 
 class Estadisticas:
 
-    nombre_jugador = "Isaac"        # Si hubiese otros personajes habría que obtenerlo con un getter
+    nombre_jugador = "Isaac"   # Si hubiese otros personajes habría que obtenerlo con un getter
     
     # Estado inicial del jugador
     tiempo_inicio = None
@@ -87,7 +87,7 @@ class Estadisticas:
     detalle_instanciados = {"Mosca": 0} # mejorar con los de cada sala
 
     enemigos_asesinados = 0
-    detalle_asesinados = {"Mosca": 0} #acá van los nombres de los enemigos como clave y como valor arranca en 0
+    detalle_asesinados = {"Mosca": 0} # Acá van los nombres de los enemigos como clave y como valor arranca en 0
 
     #---------- Métodos de estado del jugador ----------
     @classmethod
