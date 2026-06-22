@@ -69,8 +69,8 @@ class EscenaMenu:
                     self.manager.cambiar_escena(EscenaJuego(self.manager))
                     return
                 elif self.rect_btn_salir.collidepoint(pos_mouse):
-                if self.rect_btn_iniciar.collidepoint(pos_mouse):
-                    self.manager.cambiar_escena(EscenaJuego(self.manager))
+                    if self.rect_btn_iniciar.collidepoint(pos_mouse):
+                     self.manager.cambiar_escena(EscenaJuego(self.manager))
                     return
                 elif self.rect_btn_salir.collidepoint(pos_mouse):
                     pygame.quit()
@@ -172,14 +172,12 @@ class EscenaJuego:
 
         if self.jugador.rect.left <= 10:
             if puede_salir and 225 <= self.jugador.rect.centery <= 375 and self.mapa.cambiar_sala_por_direccion("IZQUIERDA"):
-            if puede_salir and 225 <= self.jugador.rect.centery <= 375 and self.mapa.cambiar_sala_por_direccion("IZQUIERDA"):
                 self.jugador.x = ancho_canvas - self.jugador.dimensiones[0] - margen
             else:
                 self.jugador.x = 10
             self.jugador.rect.x = self.jugador.x
 
         elif self.jugador.rect.right >= ancho_canvas:
-            if puede_salir and 225 <= self.jugador.rect.centery <= 375 and self.mapa.cambiar_sala_por_direccion("DERECHA"):
             if puede_salir and 225 <= self.jugador.rect.centery <= 375 and self.mapa.cambiar_sala_por_direccion("DERECHA"):
                 self.jugador.x = margen
             else:
@@ -188,14 +186,12 @@ class EscenaJuego:
 
         elif self.jugador.rect.top <= 0:
             if puede_salir and 325 <= self.jugador.rect.centerx <= 475 and self.mapa.cambiar_sala_por_direccion("ARRIBA"):
-            if puede_salir and 325 <= self.jugador.rect.centerx <= 475 and self.mapa.cambiar_sala_por_direccion("ARRIBA"):
                 self.jugador.y = alto_canvas - self.jugador.dimensiones[1] - margen
             else:
                 self.jugador.y = 0
             self.jugador.rect.y = self.jugador.y
 
         elif self.jugador.rect.bottom >= alto_canvas:
-            if puede_salir and 325 <= self.jugador.rect.centerx <= 475 and self.mapa.cambiar_sala_por_direccion("ABAJO"):
             if puede_salir and 325 <= self.jugador.rect.centerx <= 475 and self.mapa.cambiar_sala_por_direccion("ABAJO"):
                 self.jugador.y = margen
             else:
