@@ -52,7 +52,7 @@ class HormonasDeCrecimiento(ItemPasivo):
 
     def aplicar(self, jugador):
         jugador.aumentar_daño(1)
-        jugador.aumentar_velocidad(2)
+        jugador.aumentar_velocidad(1)
         
 # Cabeza de Cricket
 class CabezaDeCricket(ItemPasivo):
@@ -67,7 +67,7 @@ class CabezaDeCricket(ItemPasivo):
         )
 
     def aplicar(self, jugador):
-        cantidad = (jugador.get_daño() + 1) * 1.5
+        cantidad = (jugador.get_daño() + 1) * 1.25
         jugador.set_daño(cantidad)
         
 
@@ -84,7 +84,7 @@ class Honguito(ItemPasivo):
         )
 
     def aplicar(self, jugador):
-        jugador.aumentar_velocidad(2)
+        jugador.aumentar_velocidad(1)
         
 # Alfajor hongueado
 class AlfajorHongueado(ItemPasivo):
@@ -102,7 +102,7 @@ class AlfajorHongueado(ItemPasivo):
 
         jugador.recibir_daño(2)
         jugador.reducir_velocidad(1)
-        jugador.aumentar_daño(3)
+        jugador.aumentar_daño(2)
         
 # Sangre de Martir
 class SangreDeMartir(ItemPasivo):
@@ -236,8 +236,8 @@ class Ozempic(ItemPasivo):
 
     def aplicar(self, jugador):
 
-        jugador.reducir_vida_maxima(2)
-        jugador.aumentar_velocidad(4)
+        jugador.reducir_vida_maxima(1)
+        jugador.aumentar_velocidad(1)
         
 # Cañon de vidrio
 class CañonDeVidrio(ItemPasivo):

@@ -160,9 +160,6 @@ class Enemigo(Base):
 
         self.ultimo_hit = tiempo_actual
 
-        if hasattr(jugador, "get_vida"):
-            print("ENEMIGO HIZO DAÑO. Vida jugador:", jugador.get_vida())
-
     def colision_con_jugador(self, jugador):
         if hasattr(jugador, "rect"):
             if self.rect.colliderect(jugador.rect):
@@ -248,8 +245,6 @@ class EnemigoDisparador(Enemigo):
 
         lista_balas.append(bala)
         self.ultimo_disparo = tiempo_actual
-
-        print("ENEMIGO DISPARÓ")
 
     def actualizar_animacion_disparador(self, jugador):
         tiempo_actual = pygame.time.get_ticks()
