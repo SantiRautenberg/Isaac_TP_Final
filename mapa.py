@@ -4,8 +4,8 @@ import random
 import os
 
 from base import Base
-from enemigo import *
-from jefes import *
+from enemigo import Enemigo, EnemigoDisparador
+from jefes import JefePiso1, JefePiso2, JefePiso3
 from audio import AudioManager
 from items import *
 
@@ -323,20 +323,20 @@ class ItemEnSala(Base):
 
     def obtener_datos_sprite(self):
         sprites = {
-            1: ("vampiro", "v"),
-            2: ("hormonas", "ho"),
-            3: ("cricket", "cr"),
-            4: ("hongo", "h"),
-            5: ("alfajor", "af"),
-            6: ("martir", "m"),
-            7: ("corazon", "c"),
-            8: ("desayuno", "d"),
-            9: ("almuerzo", "al"),
-            11: ("cena", "cen"),
-            12: ("carne podrida", "cp"),
-            13: ("higado", "hi"),
-            14: ("inyeccion", "y"),
-            15: ("postre", "t"),
+            1: ("vampiro", "item_v"),
+            2: ("hormonas", "item_ho"),
+            3: ("cricket", "item_cr"),
+            4: ("hongo", "item_h"),
+            5: ("alfajor", "item_af"),
+            6: ("martir", "item_m"),
+            7: ("corazon", "item_c"),
+            8: ("desayuno", "item_d"),
+            9: ("almuerzo", "item_al"),
+            11: ("cena", "item_cen"),
+            12: ("carne podrida", "item_cp"),
+            13: ("higado", "item_hi"),
+            14: ("inyeccion", "item_y"),
+            15: ("postre", "item_t"),
         }
 
         item_id = getattr(self.item_pasivo, "id", 0)
@@ -363,7 +363,6 @@ class ItemEnSala(Base):
 
             if os.path.exists(ruta):
                 imagen = pygame.image.load(ruta).convert_alpha()
-                # Corregido: cambiamos tolerance=70 por tolerancia=70
                 imagen = limpiar_sprite(imagen, (self.ancho, self.alto), tolerancia=70)
                 frames.append(imagen)
 
@@ -444,7 +443,7 @@ class Sala(Base):
         self.nombre = nombre
         self.tipo = tipo
         self.color_fondo = color_fondo
-        self.texturas = textTextures = texturas
+        self.texturas = texturas
         self.generador_item = generador_item
 
         self.obstaculos = []
@@ -454,12 +453,10 @@ class Sala(Base):
 
         self.trampilla = None
 
-        # Variables obligatorias para el delay de enemigos comunes
+        # Variables obligatorias de control declaradas en init
         self.enemigos_guardados = []
         self.tiempo_inicio_spawn = 0
         self.timer_spawn_listo = False
-
-        # Variables obligatorias para el jefe
         self.jefe_guardado = None
         self.tiempo_entrada = 0
 
@@ -552,7 +549,6 @@ class Sala(Base):
 
         if jugador is not None:
             for enemigo in self.enemigos[:]:
-                # CORRECCIÓN DE SIGNATURA: Evaluamos segun la instancia para evitar TypeErrors anidados
                 if isinstance(enemigo, EnemigoDisparador):
                     enemigo.actualizar(jugador, lista_balas)
                 else:
@@ -568,6 +564,7 @@ class Sala(Base):
                     item.aplicar(jugador)
                     self.items.remove(item)
 
+        # CORRECCIÓN: Validamos que el jefe ya haya salido de la cola de espera antes de abrir la trampilla
         if self.tipo == "boss" and self.trampilla is not None:
             if self.jefe_guardado is None and len(self.enemigos) == 0:
                 if not self.trampilla.abierta:
@@ -813,9 +810,9 @@ class Piso(Base):
         return sala
 
     def agregar_enemigos_extra_por_piso(self, sala):
-        cantidad_extra = max(0, self.numero - 1)
+        amount_extra = max(0, self.numero - 1)
 
-        for _ in range(cantidad_extra):
+        for _ in range(amount_extra):
             x, y = self.obtener_posicion_enemigo_extra(sala)
 
             if random.choice(["normal", "disparador"]) == "disparador":
@@ -857,12 +854,12 @@ class Piso(Base):
                 self.sala_actual.enemigos = []
                 self.sala_actual.tiempo_inicio_spawn = pygame.time.get_ticks()
 
-            # Sonido de cierre de puertas y reproducción ÚNICA de música del jefe
+            # CORRECCIÓN: La música del jefe se dispara ACÁ exactamente una sola vez al entrar
             if self.sala_actual.tipo == "boss" and self.sala_actual.jefe_guardado is not None:
                 if self.sala_actual.tiempo_entrada == 0:
                     self.sala_actual.tiempo_entrada = pygame.time.get_ticks()
                     AudioManager.play_sfx("spawn_jefe")
-                    AudioManager.play_music("musica_jefe.mp3") # Movido acá para evitar bucle continuo
+                    AudioManager.play_music("musica_jefe.mp3")
 
         tiempo_actual = pygame.time.get_ticks()
         for enemigo in self.sala_actual.enemigos:
@@ -920,6 +917,7 @@ class Piso(Base):
                     self.sala_actual.agregar_enemigo(self.sala_actual.jefe_guardado)
                     self.sala_actual.jefe_guardado = None
 
+            # CORRECCIÓN: Se quitó la línea de play_music que corría acá a 60 FPS arruinando la mezcla
             self.sala_actual.actualizar(pantalla, jugador, balas)
 
     def colision(self, rect_jugador):
@@ -931,7 +929,6 @@ class Piso(Base):
         if self.sala_actual is not None:
             return self.sala_actual.jugador_en_trampilla(rect_jugador)
         return False
-
 
 # ============================================================
 # MAPA
@@ -987,6 +984,7 @@ class Mapa(Base):
 
         return False
 
+    # CORRECCIÓN: Un solo método dibujar limpio y con el argumento correcto 'pantalla'
     def dibujar(self, pantalla):
         if self.piso_actual is not None:
             self.piso_actual.dibujar(pantalla)
