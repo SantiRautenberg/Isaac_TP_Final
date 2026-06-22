@@ -145,9 +145,13 @@ class Jugador(Base):
 
     def set_velMovimiento(self, valor):
         self.__vel_movimiento += valor
+        if self.__vel_movimiento <= 0:
+            self.__vel_movimiento = 1
 
     def set_daño(self, valor):
         self.__daño += valor
+        if self.__daño <= 0:
+            self.__daño = 1
 
     # ------------ Métodos del personaje ------------
     def recibirDaño(self,cantidad):
