@@ -1,24 +1,4 @@
 {
-    "2026-06-22_15:49:19": {
-        "Resultado": "victoria",
-        "Duración": "0:02:27.420000",
-        "Puntaje": 218
-    },
-    "2026-06-22_15:53:11": {
-        "Resultado": "derrota",
-        "Duración": "0:01:01.350000",
-        "Puntaje": 43
-    },
-    "2026-06-22_16:05:06": {
-        "Resultado": "derrota",
-        "Duración": "0:01:49.650000",
-        "Puntaje": 37
-    },
-    "2026-06-22_16:05:23": {
-        "Resultado": "derrota",
-        "Duración": "0:00:14.680000",
-        "Puntaje": 52
-    },
     "2026-06-22_16:07:22": {
         "Resultado": "derrota",
         "Duración": "0:01:55.570000",
@@ -33,10 +13,5 @@
         "Resultado": "victoria",
         "Duración": "0:01:29.370000",
         "Puntaje": 1885
-    },
-    "2026-06-22_16:16:09": {
-        "Resultado": "victoria",
-        "Duración": "0:01:07.730000",
-        "Puntaje": 198
     }
 }

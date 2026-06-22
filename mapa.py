@@ -52,30 +52,33 @@ def quitar_fondo_por_esquinas(superficie, tolerancia=55):
         superficie.get_at((ancho - 1, alto - 1))[:3],
     ]
 
+    # Pygame tiene una forma de manipular los pixeles sin renderizarlos
+    pxarray = pygame.PixelArray(superficie)
+
     for x in range(ancho):
         for y in range(alto):
-            r, g, b, a = superficie.get_at((x, y))
+            color = superficie.unmap_rgb(pxarray[x, y])
 
-            if a == 0:
+            if color.a == 0:
                 continue
 
             # Borra blancos/grises claros del fondo cuadriculado
-            es_claro = r > 205 and g > 205 and b > 205
+            es_claro = color.r > 205 and color.g > 205 and color.b > 205
 
-            # Borra colores parecidos a las esquinas
             es_fondo = False
             for fr, fg, fb in colores_fondo:
                 if (
-                    abs(r - fr) <= tolerancia and
-                    abs(g - fg) <= tolerancia and
-                    abs(b - fb) <= tolerancia
+                    abs(color.r - fr) <= tolerancia and
+                    abs(color.g - fg) <= tolerancia and
+                    abs(color.b - fb) <= tolerancia
                 ):
                     es_fondo = True
                     break
 
             if es_claro or es_fondo:
-                superficie.set_at((x, y), (r, g, b, 0))
+                pxarray[x, y] = superficie.map_rgb((color.r, color.g, color.b, 0))
 
+    del pxarray
     return superficie
 
 
@@ -911,22 +914,21 @@ class Piso(Base):
             if not hasattr(self.sala_actual, "jefe_guardado"): self.sala_actual.jefe_guardado = None
             if not hasattr(self.sala_actual, "tiempo_entrada"): self.sala_actual.tiempo_entrada = 0
 
-            # Los enemigos se spawnean al 0.5 segundo
+            # Los enemigos se spawnean al 0.25 segundo
             if len(self.sala_actual.enemigos_guardados) > 0:
-                if pygame.time.get_ticks() - self.sala_actual.tiempo_inicio_spawn >= 500:
+                if pygame.time.get_ticks() - self.sala_actual.tiempo_inicio_spawn >= 250:
                     AudioManager.play_sfx("spawn_enemigos")
                     self.sala_actual.enemigos = self.sala_actual.enemigos_guardados
                     self.sala_actual.enemigos_guardados = []
                     self.sala_actual.timer_spawn_listo = True
 
-            # Se spawnea el jefe 1 sec despues
+            # Se spawnea el jefe 0.75 sec despues
             if self.sala_actual.tipo == "boss" and self.sala_actual.jefe_guardado is not None:
-                if pygame.time.get_ticks() - self.sala_actual.tiempo_entrada >= 1000:
+                if pygame.time.get_ticks() - self.sala_actual.tiempo_entrada >= 750:
                     AudioManager.play_sfx("spawn_enemigos")
                     self.sala_actual.agregar_enemigo(self.sala_actual.jefe_guardado)
                     self.sala_actual.jefe_guardado = None
 
-            # CORRECCIÓN: Se quitó la línea de play_music que corría acá a 60 FPS arruinando la mezcla
             self.sala_actual.actualizar(pantalla, jugador, balas)
 
     def colision(self, rect_jugador):
@@ -956,28 +958,23 @@ class Mapa(Base):
         self.crear_mapa()
 
     def crear_mapa(self):
+        # Cargamos el piso 1 apenas arranca durante el fundido a negro
         self.pisos[1] = Piso(1, self.texturas, self.items_usados)
         self.piso_actual = self.pisos[1]
 
-    def asegurar_piso_creado(self, numero_piso):
-        if numero_piso < 1 or numero_piso > 3:
-            return False
-
-        if numero_piso not in self.pisos:
-            self.pisos[numero_piso] = Piso(numero_piso, self.texturas, self.items_usados)
-
-        return True
-
     def cambiar_piso(self, numero_piso):
-        if self.asegurar_piso_creado(numero_piso):
+        if numero_piso in self.pisos:
             self.piso_actual = self.pisos[numero_piso]
             print("Piso actual:", numero_piso)
 
     def pasar_siguiente_piso(self):
         numero_actual = self.obtener_numero_piso_actual()
         siguiente = numero_actual + 1
-
-        if self.asegurar_piso_creado(siguiente):
+        # Cargamos en memoria los pisos a medida que vamos pasando para mejor rendimiento
+        if siguiente <= 3:
+            if siguiente not in self.pisos:
+                print(f"[Mapa Info] Generando Piso {siguiente} en caliente durante la transición...")
+                self.pisos[siguiente] = Piso(siguiente, self.texturas, self.items_usados)
             self.cambiar_piso(siguiente)
             return True
 
@@ -998,7 +995,6 @@ class Mapa(Base):
             return self.piso_actual.cambiar_sala_por_direccion(direccion)
 
         return False
-
 
     def dibujar(self, pantalla):
         if self.piso_actual is not None:

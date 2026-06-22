@@ -3,6 +3,7 @@ import pygame
 import pygame_gui
 import os
 import sys
+import json
 from personaje import Jugador
 from bala import Bala
 from mapa import Mapa
@@ -47,6 +48,7 @@ class EscenaMenu:
         self.manager = manager_escenas
         self.fondo_menu = None
         self.rect_btn_iniciar = pygame.Rect(0, 0, 0, 0)
+        self.rect_btn_puntajes = pygame.Rect(0, 0, 0, 0)
         self.rect_btn_salir = pygame.Rect(0, 0, 0, 0)
 
         # Variables para el fade out
@@ -57,7 +59,6 @@ class EscenaMenu:
         AudioManager.play_music("musica_menu.mp3", volumen=0.2)
         ruta_img = os.path.join(os.path.dirname(__file__), "imagenes", "menu", "menu_inicial.png")
         if os.path.exists(ruta_img):
-            # Escalamos el fondo para que cubra la nueva resolucion de 800x720
             imagen_original = pygame.image.load(ruta_img).convert_alpha()
             self.fondo_menu = pygame.transform.scale(imagen_original, self.manager.resolucion)
 
@@ -69,10 +70,15 @@ class EscenaMenu:
 
             if evento.type == pygame.MOUSEBUTTONDOWN and evento.button == 1:
                 pos_mouse = pygame.mouse.get_pos()
+
                 if self.rect_btn_iniciar.collidepoint(pos_mouse) and not self.fading:
                     self.fading = True
                     AudioManager.stop_music()
                     AudioManager.play_sfx("iniciar_juego")
+                elif self.rect_btn_puntajes.collidepoint(pos_mouse) and not self.fading:
+                    AudioManager.play_sfx("lagrima_impacto")
+                    self.manager.cambiar_escena(EscenaPuntajes(self.manager))
+                    return
                 elif self.rect_btn_salir.collidepoint(pos_mouse) and not self.fading:
                     pygame.quit()
                     sys.exit()
@@ -104,38 +110,46 @@ class EscenaMenu:
         ancho_b, alto_b = 180, 40
         pos_mouse = pygame.mouse.get_pos()
 
-        if self.rect_btn_iniciar.collidepoint(pos_mouse):
-            color_fondo_jugar = color_interaccion_boton
-        else:
-            color_fondo_jugar = color_boton
+        # Cambios estéticos reactivos al pasar el mouse por encima
+        color_fondo_jugar = color_interaccion_boton if self.rect_btn_iniciar.collidepoint(pos_mouse) else color_boton
+        color_fondo_puntajes = color_interaccion_boton if self.rect_btn_puntajes.collidepoint(pos_mouse) else color_boton
+        color_fondo_salir = color_interaccion_boton if self.rect_btn_salir.collidepoint(pos_mouse) else color_boton
 
-        if self.rect_btn_salir.collidepoint(pos_mouse):
-            color_fondo_salir = color_interaccion_boton
-        else:
-            color_fondo_salir = color_boton
-
+        # Botón 1: JUGAR
         surf_btn1 = pygame.Surface((ancho_b, alto_b), pygame.SRCALPHA)
-        pygame.draw.rect(surf_btn1, (color_fondo_jugar), (0, 0, ancho_b, alto_b), border_radius=3)
-        pygame.draw.rect(surf_btn1, (color_boton_borde), (0, 0, ancho_b, alto_b), 2, border_radius=3)
-        texto_btn1 = fuente_menu.render("JUGAR", True, (color_texto))
+        pygame.draw.rect(surf_btn1, color_fondo_jugar, (0, 0, ancho_b, alto_b), border_radius=3)
+        pygame.draw.rect(surf_btn1, color_boton_borde, (0, 0, ancho_b, alto_b), 2, border_radius=3)
+        texto_btn1 = fuente_menu.render("JUGAR", True, color_texto)
         surf_btn1.blit(texto_btn1, texto_btn1.get_rect(center=(ancho_b // 2, alto_b // 2)))
 
+        # Botón 2: PUNTAJES
+        surf_btn_p = pygame.Surface((ancho_b, alto_b), pygame.SRCALPHA)
+        pygame.draw.rect(surf_btn_p, color_fondo_puntajes, (0, 0, ancho_b, alto_b), border_radius=3)
+        pygame.draw.rect(surf_btn_p, color_boton_borde, (0, 0, ancho_b, alto_b), 2, border_radius=3)
+        texto_btn_p = fuente_menu.render("TOP 3 PUNTAJES", True, color_texto)
+        surf_btn_p.blit(texto_btn_p, texto_btn_p.get_rect(center=(ancho_b // 2, alto_b // 2)))
+
+        # Botón 3: SALIR
         surf_btn2 = pygame.Surface((ancho_b, alto_b), pygame.SRCALPHA)
-        pygame.draw.rect(surf_btn2, (color_fondo_salir), (0, 0, ancho_b, alto_b), border_radius=3)
+        pygame.draw.rect(surf_btn2, color_fondo_salir, (0, 0, ancho_b, alto_b), border_radius=3)
         pygame.draw.rect(surf_btn2, (140, 124, 128), (0, 0, ancho_b, alto_b), 2, border_radius=3)
-        texto_btn2 = fuente_menu.render("SALIR", True, (color_texto))
+        texto_btn2 = fuente_menu.render("SALIR", True, color_texto)
         surf_btn2.blit(texto_btn2, texto_btn2.get_rect(center=(ancho_b // 2, alto_b // 2)))
 
         surf_btn1_rotado = pygame.transform.rotate(surf_btn1, -5)
+        surf_btn_p_rotado = pygame.transform.rotate(surf_btn_p, -5)
         surf_btn2_rotado = pygame.transform.rotate(surf_btn2, -5)
 
-        pos_b1_x, pos_b1_y = 305, 330
-        pos_b2_x, pos_b2_y = 313, 410
+        pos_b1_x, pos_b1_y = 300, 310
+        pos_bp_x, pos_bp_y = 308, 385
+        pos_b2_x, pos_b2_y = 316, 460
 
         self.rect_btn_iniciar = surf_btn1_rotado.get_rect(topleft=(pos_b1_x, pos_b1_y))
+        self.rect_btn_puntajes = surf_btn_p_rotado.get_rect(topleft=(pos_bp_x, pos_bp_y))
         self.rect_btn_salir = surf_btn2_rotado.get_rect(topleft=(pos_b2_x, pos_b2_y))
 
         self.manager.pantalla.blit(surf_btn1_rotado, (pos_b1_x, pos_b1_y))
+        self.manager.pantalla.blit(surf_btn_p_rotado, (pos_bp_x, pos_bp_y))
         self.manager.pantalla.blit(surf_btn2_rotado, (pos_b2_x, pos_b2_y))
 
         if self.fade_alpha > 0:
@@ -143,6 +157,110 @@ class EscenaMenu:
             surf_fade.fill((0, 0, 0))
             surf_fade.set_alpha(int(self.fade_alpha))
             self.manager.pantalla.blit(surf_fade, (0, 0))
+
+# =====================[ESCENA: TOP 3 PUNTAJES]=======================================
+class EscenaPuntajes:
+    def __init__(self, manager_escenas):
+        self.manager = manager_escenas
+        self.rect_btn_volver = pygame.Rect(0, 0, 0, 0)
+        self.lista_top_3 = []
+
+    def inicializar(self):
+        self.lista_top_3 = []
+        ruta_json = os.path.join(os.path.dirname(os.path.abspath(__file__)), "registro_partidas.json")
+        if not os.path.exists(ruta_json):
+            ruta_json = "registro_partidas.json"
+
+        if os.path.exists(ruta_json):
+            try:
+                if os.path.getsize(ruta_json) > 0:
+                    with open(ruta_json, "r", encoding="utf-8") as f:
+                        datos = json.load(f)
+
+                        # Procesamos el diccionario estructurado por marcas de tiempo
+                        if isinstance(datos, dict):
+                            puntajes = []
+                            for info_partida in datos.values():
+                                if isinstance(info_partida, dict) and "Puntaje" in info_partida:
+                                    puntajes.append(int(info_partida["Puntaje"]))
+
+                            puntajes.sort(reverse=True)
+                            self.lista_top_3 = puntajes[:3]
+            except Exception as e:
+                print(f"[Error Leaderboard] Archivo vacío o estructura JSON inválida: {e}")
+
+    def actualizar(self, time_delta, tiempo_actual, keys):
+        for evento in pygame.event.get():
+            if evento.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+
+            # Soporte para volver al menú con la tecla ESC
+            if evento.type == pygame.KEYDOWN and evento.key == pygame.K_ESCAPE:
+                self.manager.cambiar_escena(EscenaMenu(self.manager))
+                return
+
+            if evento.type == pygame.MOUSEBUTTONDOWN and evento.button == 1:
+                pos_mouse = pygame.mouse.get_pos()
+                if self.rect_btn_volver.collidepoint(pos_mouse):
+                    AudioManager.play_sfx("lagrima_impacto")
+                    self.manager.cambiar_escena(EscenaMenu(self.manager))
+                    return
+
+    def dibujar(self):
+        self.manager.pantalla.fill(color_boton)
+
+        if os.path.exists(self.manager.ruta_fuente):
+            fuente_titulo = pygame.font.Font(self.manager.ruta_fuente, 24)
+            fuente_ranking = pygame.font.Font(self.manager.ruta_fuente, 20)
+        else:
+            fuente_titulo = pygame.font.SysFont("sans", 26, bold=True)
+            fuente_ranking = pygame.font.SysFont("sans", 20, bold=True)
+
+        surf_titulo = fuente_titulo.render("TOP 3 MEJORES PUNTAJES", True, color_texto)
+        self.manager.pantalla.blit(surf_titulo, surf_titulo.get_rect(center=(400, 150)))
+
+        y_puesto = 250
+        etiquetas_podio = ["1° LUGAR:  ", "2° LUGAR:  ", "3° LUGAR:  "]
+
+        # Dimensiones de las cajas individuales de puntuación
+        ancho_caja, alto_caja = 340, 46
+        colores_podio_claros = [(180, 135, 10), (95, 95, 95), (135, 85, 30)] # Oro, Plata y Bronce
+
+        for i in range(3):
+            if i < len(self.lista_top_3):
+                texto_linea = f"{etiquetas_podio[i]}{self.lista_top_3[i]} PTS"
+            else:
+                texto_linea = f"{etiquetas_podio[i]}---"
+
+            rect_caja = pygame.Rect(0, 0, ancho_caja, alto_caja)
+            rect_caja.center = (400, y_puesto)
+
+            pygame.draw.rect(self.manager.pantalla, (236, 220, 220), rect_caja, border_radius=4)
+            pygame.draw.rect(self.manager.pantalla, color_boton_borde, rect_caja, 2, border_radius=4)
+
+            # 4. Renderizamos y bliteamos el texto centrado exactamente adentro del recuadro
+            surf_linea = fuente_ranking.render(texto_linea, True, colores_podio_claros[i])
+            self.manager.pantalla.blit(surf_linea, surf_linea.get_rect(center=rect_caja.center))
+
+            y_puesto += 65
+
+
+        # Botón Volver
+        ancho_b, alto_b = 180, 40
+        pos_mouse = pygame.mouse.get_pos()
+        color_btn_actual = color_interaccion_boton if self.rect_btn_volver.collidepoint(pos_mouse) else color_boton
+
+        surf_btn = pygame.Surface((ancho_b, alto_b), pygame.SRCALPHA)
+        pygame.draw.rect(surf_btn, color_btn_actual, (0, 0, ancho_b, alto_b), border_radius=3)
+        pygame.draw.rect(surf_btn, color_boton_borde, (0, 0, ancho_b, alto_b), 2, border_radius=3)
+        texto_btn = fuente_ranking.render("VOLVER", True, color_texto)
+        surf_btn.blit(texto_btn, texto_btn.get_rect(center=(ancho_b // 2, alto_b // 2)))
+
+        surf_btn_rotado = pygame.transform.rotate(surf_btn, 0)
+        pos_x, pos_y = 310, 520
+        self.rect_btn_volver = surf_btn_rotado.get_rect(topleft=(pos_x, pos_y))
+        self.manager.pantalla.blit(surf_btn_rotado, (pos_x, pos_y))
 
 
 # =====================[ESCENA: PARTIDA JUGABLE]======================================
