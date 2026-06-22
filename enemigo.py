@@ -5,6 +5,16 @@ import pygame
 import math
 import os
 
+def cargar_sprite_recortado(ruta, dimensiones):
+    imagen = pygame.image.load(ruta).convert_alpha()
+    rect_contenido = imagen.get_bounding_rect()
+
+    if rect_contenido.width > 0 and rect_contenido.height > 0:
+        imagen = imagen.subsurface(rect_contenido).copy()
+
+    return pygame.transform.scale(imagen, dimensiones)
+
+
 class Enemigo(Base):
     def __init__(self, x, y, velocidad=2, vida=5, daño=1):
         super().__init__(x, y)
@@ -16,8 +26,8 @@ class Enemigo(Base):
         self.delay_entrada = 1000
         self.tiempo_spawn = pygame.time.get_ticks()
 
-        self.ancho = 40
-        self.alto = 40
+        self.ancho = 60
+        self.alto = 60
         self.rect = pygame.Rect(self.x, self.y, self.ancho, self.alto)
 
         self.cooldown_daño = 450
@@ -33,13 +43,13 @@ class Enemigo(Base):
         for i in range(1, 4):
             ruta = os.path.join(ruta_carpeta, f"ene_perseguidor_{i}.png")
             if os.path.exists(ruta):
-                self.anim_frente.append(pygame.transform.scale(pygame.image.load(ruta).convert_alpha(), self.dimensiones))
+                self.anim_frente.append(cargar_sprite_recortado(ruta, self.dimensiones))
 
         self.anim_espalda = []
         for i in range(1, 3):
             ruta = os.path.join(ruta_carpeta, f"ene_perseguidor_espalda_{i}.png")
             if os.path.exists(ruta):
-                self.anim_espalda.append(pygame.transform.scale(pygame.image.load(ruta).convert_alpha(), self.dimensiones))
+                self.anim_espalda.append(cargar_sprite_recortado(ruta, self.dimensiones))
 
         # --- Variables de control para la animacion ---
         self.direccion_actual = "ABAJO"
@@ -58,7 +68,17 @@ class Enemigo(Base):
     def resetear_delay(self):
         self.tiempo_spawn = pygame.time.get_ticks()
 
-    def seguir_jugador(self, jugador):
+    def colisiona_obstaculos(self, obstaculos):
+        if obstaculos is None:
+            return False
+
+        for obstaculo in obstaculos:
+            if self.rect.colliderect(obstaculo.rect):
+                return True
+
+        return False
+
+    def seguir_jugador(self, jugador, obstaculos=None):
         dx = jugador.x - self.x
         dy = jugador.y - self.y
         distancia = math.hypot(dx, dy)
@@ -68,11 +88,22 @@ class Enemigo(Base):
             dx /= distancia
             dy /= distancia
 
-            self.x += dx * self.velocidad
-            self.y += dy * self.velocidad
+            movimiento_x = dx * self.velocidad
+            movimiento_y = dy * self.velocidad
 
+            self.x += movimiento_x
             self.rect.x = int(self.x)
+
+            if self.colisiona_obstaculos(obstaculos):
+                self.x -= movimiento_x
+                self.rect.x = int(self.x)
+
+            self.y += movimiento_y
             self.rect.y = int(self.y)
+
+            if self.colisiona_obstaculos(obstaculos):
+                self.y -= movimiento_y
+                self.rect.y = int(self.y)
 
             # Cambiamos la direccion visual según el eje vertical
             if dy < 0:
@@ -99,7 +130,7 @@ class Enemigo(Base):
             if tiempo_actual - self.tiempo_ultimo_frame > self.velocidad_animacion:
                 self.indice_animacion = (self.indice_animacion + 1) % len(anim_activa)
                 self.tiempo_ultimo_frame = tiempo_actual
-            
+
             # ajustamos el indice por las dudas si cambia de animacion
             self.indice_animacion = self.indice_animacion % len(anim_activa)
             self.sprite = anim_activa[self.indice_animacion]
@@ -149,14 +180,14 @@ class Enemigo(Base):
         else:
             centro_x = int(self.x + self.ancho / 2)
             centro_y = int(self.y + self.alto / 2)
-            pygame.draw.circle(pantalla, (200, 50, 50), (centro_x, centro_y), 20)
-            pygame.draw.circle(pantalla, (120, 0, 0), (centro_x, centro_y), 9)
+            pygame.draw.circle(pantalla, (200, 50, 50), (centro_x, centro_y), self.ancho // 2)
+            pygame.draw.circle(pantalla, (120, 0, 0), (centro_x, centro_y), self.ancho // 5)
 
-    def actualizar(self, jugador, *args):
+    def actualizar(self, jugador, lista_balas=None, lista_enemigos=None, obstaculos=None):
         # Espera antes de activarse
         if not self.puede_actuar():
             return
-        self.seguir_jugador(jugador)
+        self.seguir_jugador(jugador, obstaculos)
         self.colision_con_jugador(jugador)
         self.actualizar_animacion()
 
@@ -170,7 +201,7 @@ class EnemigoDisparador(Enemigo):
 
         ruta_raiz = os.path.dirname(os.path.abspath(__file__))
         ruta_carpeta_disp = os.path.join(ruta_raiz, "imagenes", "enemigos", "disparador")
-        
+
         if not os.path.exists(ruta_carpeta_disp):
             ruta_carpeta_disp = os.path.join(ruta_raiz, "imagenes", "enemigo", "disparador")
 
@@ -178,12 +209,12 @@ class EnemigoDisparador(Enemigo):
         for i in range(1, 2):
             ruta = os.path.join(ruta_carpeta_disp, f"ene_disparador_{i}.png")
             if os.path.exists(ruta):
-                self.anim_frente.append(pygame.transform.scale(pygame.image.load(ruta).convert_alpha(), self.dimensiones))
+                self.anim_frente.append(cargar_sprite_recortado(ruta, self.dimensiones))
 
         self.anim_espalda = []
         ruta_esp = os.path.join(ruta_carpeta_disp, "ene_disparador_espalda_1.png")
         if os.path.exists(ruta_esp):
-            self.anim_espalda.append(pygame.transform.scale(pygame.image.load(ruta_esp).convert_alpha(), self.dimensiones))
+            self.anim_espalda.append(cargar_sprite_recortado(ruta_esp, self.dimensiones))
 
         # Sprite inicial
         self.sprite = self.anim_frente[0] if self.anim_frente else None
@@ -238,10 +269,10 @@ class EnemigoDisparador(Enemigo):
             else:
                 self.sprite = self.anim_frente[0]
 
-    def actualizar(self, jugador, lista_balas=None):
+    def actualizar(self, jugador, lista_balas=None, lista_enemigos=None, obstaculos=None):
         # Espera antes de activarse
         if not self.puede_actuar():
-            return 
+            return
         self.colision_con_jugador(jugador)
         self.disparar(jugador, lista_balas)
         self.actualizar_animacion_disparador(jugador)
@@ -252,5 +283,5 @@ class EnemigoDisparador(Enemigo):
         else:
             centro_x = int(self.x + self.ancho / 2)
             centro_y = int(self.y + self.alto / 2)
-            pygame.draw.circle(pantalla, (50, 50, 200), (centro_x, centro_y), 20)
-            pygame.draw.circle(pantalla, (20, 20, 120), (centro_x, centro_y), 9)
+            pygame.draw.circle(pantalla, (50, 50, 200), (centro_x, centro_y), self.ancho // 2)
+            pygame.draw.circle(pantalla, (20, 20, 120), (centro_x, centro_y), self.ancho // 5)

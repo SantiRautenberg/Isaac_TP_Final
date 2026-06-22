@@ -2,7 +2,7 @@
 from base import Base
 from estadistica import Estadisticas
 from audio import AudioManager
-import pygame
+import pygames
 import os
 
 inventario = {} 

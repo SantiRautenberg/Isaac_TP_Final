@@ -12,7 +12,6 @@ class BalaEnemigo(Bala):
         self.bala_vel = 8
         # velocidad propia
         self.velocidad = 5
-        # daño propio
         self.daño = daño
         Estadisticas.sumar_balas_enemigo_disparadas()
 

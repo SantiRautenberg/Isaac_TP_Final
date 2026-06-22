@@ -6,12 +6,32 @@ import os
 from base import Base
 from enemigo import Enemigo, EnemigoDisparador
 from jefes import JefePiso1, JefePiso2, JefePiso3
-from audio import AudioManager
-from estadistica import Estadisticas
+
 
 ANCHO_PANTALLA = 800
 ALTO_PANTALLA = 600
 TAM_ROCA = 60
+
+ITEMS_DISPONIBLES = [
+    EncantoDelVampiro,
+    HormonasDeCrecimiento,
+    CabezaDeCricket,
+    Honguito,
+    AlfajorHongueado,
+    SangreDeMartir,
+    Corazon,
+    Desayuno,
+    Almuerzo,
+    Cena,
+    CarnePodrida,
+    HigadoCrudo,
+    Ozempic,
+]
+
+item_canon_vidrio = globals().get("CañonDeVidrio") or globals().get("CaÃ±onDeVidrio")
+
+if item_canon_vidrio is not None:
+    ITEMS_DISPONIBLES.append(item_canon_vidrio)
 
 
 # ============================================================
@@ -91,10 +111,12 @@ class TexturasMapa:
 
         self.sala_comun = self.cargar_imagen(ruta_sala_comun)
 
+
         self.puertas_sheet = self.cargar_imagen(os.path.join(ruta_mapa, "puertas_0.png"))
         self.roca = self.cargar_imagen(os.path.join(ruta_mapa, "roca_0.png"))
         self.trampilla_cerrada = self.cargar_imagen(os.path.join(ruta_mapa, "escotilla_cerrada.png"))
         self.trampilla_abierta = self.cargar_imagen(os.path.join(ruta_mapa, "escotilla_abierta.png"))
+
 
         self.sala_tutorial_fondo = None
         self.sala_comun_fondo = None
@@ -237,7 +259,7 @@ class Trampilla(Base):
 
         if self.imagen_actual is not None:
             self.rect = self.imagen_actual.get_rect(topleft=(self.x, self.y))
-        
+
         AudioManager.play_sfx("trampilla_abierta")
 
     def cerrar(self):
@@ -284,32 +306,206 @@ class Obstaculo(Base):
 
 
 # ============================================================
+# ITEMS EN EL PISO
+# ============================================================
+
+class ItemEnSala(Base):
+    def __init__(self, x, y, item_pasivo):
+        super().__init__(x, y)
+
+        self.item_pasivo = item_pasivo
+        self.ancho = 48
+        self.alto = 48
+        self.rect = pygame.Rect(self.x, self.y, self.ancho, self.alto)
+        self.frames = self.cargar_frames()
+        self.indice_frame = 0
+        self.tiempo_ultimo_frame = 0
+        self.velocidad_animacion = 180
+
+    def obtener_datos_sprite(self):
+        sprites = {
+            1: ("vampiro", "v"),
+            2: ("hormonas", "ho"),
+            3: ("cricket", "cr"),
+            4: ("hongo", "h"),
+            5: ("alfajor", "af"),
+            6: ("martir", "m"),
+            7: ("corazon", "c"),
+            8: ("desayuno", "d"),
+            9: ("almuerzo", "al"),
+            11: ("cena", "cen"),
+            12: ("carne podrida", "cp"),
+            13: ("higado", "hi"),
+            14: ("inyeccion", "y"),
+            15: ("postre", "t"),
+        }
+
+        item_id = getattr(self.item_pasivo, "id", 0)
+        return sprites.get(item_id)
+
+    def cargar_frames(self):
+        datos_sprite = self.obtener_datos_sprite()
+
+        if datos_sprite is None:
+            return []
+
+        carpeta_item, prefijo = datos_sprite
+        ruta_items = os.path.join(
+            os.path.dirname(__file__),
+            "imagenes",
+            "items",
+            carpeta_item
+        )
+
+        frames = []
+
+        for i in range(1, 4):
+            ruta = os.path.join(ruta_items, f"{prefijo}{i}.png")
+
+            if os.path.exists(ruta):
+                imagen = pygame.image.load(ruta).convert_alpha()
+                imagen = limpiar_sprite(imagen, (self.ancho, self.alto), tolerancia=70)
+                frames.append(imagen)
+
+        return frames
+
+    def cambiar_daño(self, jugador, cantidad):
+        if hasattr(jugador, "set_daño"):
+            jugador.set_daño(cantidad)
+
+    def cambiar_velocidad(self, jugador, cantidad):
+        if hasattr(jugador, "set_velMovimiento"):
+            jugador.set_velMovimiento(cantidad)
+
+    def curar(self, jugador, cantidad):
+        if hasattr(jugador, "curarse"):
+            jugador.curarse(cantidad)
+        elif hasattr(jugador, "get_vida") and hasattr(jugador, "set_vida"):
+            jugador.set_vida(jugador.get_vida() + cantidad)
+
+    def hacer_daño(self, jugador, cantidad):
+        if hasattr(jugador, "recibirDaño"):
+            jugador.recibirDaño(cantidad)
+        elif hasattr(jugador, "recibir_daño"):
+            jugador.recibir_daño(cantidad)
+        elif hasattr(jugador, "get_vida") and hasattr(jugador, "set_vida"):
+            jugador.set_vida(jugador.get_vida() - cantidad)
+
+    def aplicar(self, jugador):
+        item_id = getattr(self.item_pasivo, "id", 0)
+
+        if item_id == 1:      # Encanto del vampiro
+            self.cambiar_daño(jugador, 3)
+        elif item_id == 2:    # Hormonas de crecimiento
+            self.cambiar_daño(jugador, 1)
+            self.cambiar_velocidad(jugador, 2)
+        elif item_id == 3:    # Cabeza de Cricket
+            daño_actual = 1
+            if hasattr(jugador, "get_daño"):
+                daño_actual = jugador.get_daño()
+            self.cambiar_daño(jugador, 1)
+            self.cambiar_daño(jugador, daño_actual * 0.5)
+        elif item_id == 4:    # Honguito
+            self.cambiar_velocidad(jugador, 2)
+        elif item_id == 5:    # Alfajor hongueado
+            self.hacer_daño(jugador, 2)
+            self.cambiar_velocidad(jugador, -1)
+            self.cambiar_daño(jugador, 3)
+        elif item_id == 6:    # Sangre de Martir
+            self.cambiar_daño(jugador, 1)
+        elif item_id == 7:    # Corazon
+            self.curar(jugador, 10)
+        elif item_id in (8, 9, 11, 12):  # Desayuno, Almuerzo, Cena, Carne podrida
+            self.curar(jugador, 1)
+        elif item_id == 13:   # Higado crudo
+            self.curar(jugador, 10)
+        elif item_id == 14:   # Ozempic
+            self.hacer_daño(jugador, 2)
+            self.cambiar_velocidad(jugador, 4)
+        elif item_id == 15:   # Cañon de vidrio
+            self.hacer_daño(jugador, 1)
+            self.cambiar_daño(jugador, 5)
+
+    def dibujar(self, pantalla):
+        if self.frames:
+            tiempo_actual = pygame.time.get_ticks()
+
+            if tiempo_actual - self.tiempo_ultimo_frame > self.velocidad_animacion:
+                self.indice_frame = (self.indice_frame + 1) % len(self.frames)
+                self.tiempo_ultimo_frame = tiempo_actual
+
+            pantalla.blit(self.frames[self.indice_frame], (self.x, self.y))
+            return
+
+        pygame.draw.rect(pantalla, (230, 210, 80), self.rect, border_radius=6)
+        pygame.draw.rect(pantalla, (80, 60, 20), self.rect, 2, border_radius=6)
+        pygame.draw.circle(pantalla, (255, 245, 170), self.rect.center, 8)
+
+    def actualizar(self, pantalla, *args):
+        pass
+
+
+def crear_item_random(x, y):
+    clase_item = random.choice([
+        EncantoDelVampiro,
+        HormonasDeCrecimiento,
+        CabezaDeCricket,
+        Honguito,
+        AlfajorHongueado,
+        SangreDeMartir,
+        Corazon,
+        Desayuno,
+        Almuerzo,
+        Cena,
+        CarnePodrida,
+        HigadoCrudo,
+        Ozempic,
+        CañonDeVidrio,
+    ])
+
+    return ItemEnSala(x, y, clase_item())
+
+
+def crear_item_unico(x, y, items_usados):
+    clases_disponibles = []
+
+    for clase_item in ITEMS_DISPONIBLES:
+        item = clase_item()
+
+        if item.id not in items_usados:
+            clases_disponibles.append(clase_item)
+
+    if not clases_disponibles:
+        items_usados.clear()
+        clases_disponibles = ITEMS_DISPONIBLES[:]
+
+    clase_elegida = random.choice(clases_disponibles)
+    item_pasivo = clase_elegida()
+    items_usados.add(item_pasivo.id)
+
+    return ItemEnSala(x, y, item_pasivo)
+
+
+# ============================================================
 # SALA
 # ============================================================
 
 class Sala(Base):
-    def __init__(self, nombre, tipo="comun", color_fondo=(35, 30, 35), texturas=None):
+    def __init__(self, nombre, tipo="comun", color_fondo=(35, 30, 35), texturas=None, generador_item=None):
         super().__init__(0, 0)
 
         self.nombre = nombre
         self.tipo = tipo
         self.color_fondo = color_fondo
         self.texturas = texturas
+        self.generador_item = generador_item
 
         self.obstaculos = []
         self.enemigos = []
+        self.items = []
         self.conexiones = {}
 
         self.trampilla = None
-
-        # variables para el delay de enemigos comunes
-        self.enemigos_guardados = []
-        self.tiempo_inicio_spawn = 0
-        self.timer_spawn_listo = False
-
-        # variables para el jefe
-        self.jefe_guardado = None
-        self.tiempo_entrada = 0
 
         if self.tipo == "boss" and self.texturas is not None:
             self.trampilla = Trampilla(
@@ -327,7 +523,6 @@ class Sala(Base):
 
     def agregar_enemigo(self, enemigo):
         self.enemigos.append(enemigo)
-        Estadisticas.sumar_enemigos_instanciados()
 
     def dibujar_fondo(self, pantalla):
         if self.tipo == "tutorial":
@@ -386,6 +581,9 @@ class Sala(Base):
         for enemigo in self.enemigos:
             enemigo.dibujar(pantalla)
 
+        for item in self.items:
+            item.dibujar(pantalla)
+
         if self.trampilla is not None:
             self.trampilla.dibujar(pantalla)
 
@@ -395,27 +593,24 @@ class Sala(Base):
 
         if jugador is not None:
             for enemigo in self.enemigos[:]:
-                if isinstance(enemigo, EnemigoDisparador):
-                    enemigo.actualizar(jugador, lista_balas)
-                else:
+                try:
+                    enemigo.actualizar(jugador, lista_balas, self.enemigos, self.obstaculos)
+                except TypeError:
                     enemigo.actualizar(jugador, lista_balas, self.enemigos)
 
                 if enemigo.vida <= 0:
                     self.enemigos.remove(enemigo)
                     Estadisticas.sumar_enemigos_asesinados()
 
+            for item in self.items[:]:
+                if hasattr(jugador, "rect") and item.rect.colliderect(jugador.rect):
+                    item.aplicar(jugador)
+                    self.items.remove(item)
+
         # Si es sala boss y ya no quedan enemigos, aparece la trampilla abierta
         if self.tipo == "boss" and self.trampilla is not None:
-            # checkeamos que el jefe ya haya spawneado de la lista de espera
-            if self.jefe_guardado is None and len(self.enemigos) == 0:
-                if not self.trampilla.abierta:
-                    self.trampilla.abrir()
-                    Estadisticas.sumar_boss_derrotados()
-                    AudioManager.stop_music()
-
-    def al_entrar(self, tiempo_actual):
-        for enemigo in self.enemigos:
-            enemigo.resetear_delay(tiempo_actual)
+            if len(self.enemigos) == 0:
+                self.trampilla.abrir()
 
     def colision(self, rect_jugador):
         for obstaculo in self.obstaculos:
@@ -482,11 +677,12 @@ presets_salas_comunes = [
 # ============================================================
 
 class Piso(Base):
-    def __init__(self, numero, texturas):
+    def __init__(self, numero, texturas, items_usados=None):
         super().__init__(0, 0)
 
         self.numero = numero
         self.texturas = texturas
+        self.items_usados = items_usados if items_usados is not None else set()
 
         self.salas = {}
         self.sala_actual = None
@@ -494,17 +690,17 @@ class Piso(Base):
 
         self.crear_piso()
 
+    def crear_item_unico_del_mapa(self, x, y):
+        return crear_item_unico(x, y, self.items_usados)
+
     def crear_piso(self):
-        # Piso 1 empieza con sala tutorial
-        if self.numero == 1:
-            self.salas["comun_1"] = Sala(
-                "comun_1",
-                tipo="tutorial",
-                color_fondo=(35, 30, 35),
-                texturas=self.texturas
-            )
-        else:
-            self.salas["comun_1"] = self.crear_sala_comun("comun_1")
+        # Sala inicial del piso: sin instrucciones, obstaculos ni enemigos
+        self.salas["comun_1"] = Sala(
+            "comun_1",
+            tipo="comun",
+            color_fondo=(35, 30, 35),
+            texturas=self.texturas
+        )
 
         self.salas["comun_2"] = self.crear_sala_comun("comun_2")
         self.salas["comun_3"] = self.crear_sala_comun("comun_3")
@@ -517,13 +713,17 @@ class Piso(Base):
             color_fondo=(45, 40, 20),
             texturas=self.texturas
         )
+        self.salas["tesoro"].agregar_item(
+            self.crear_item_unico_del_mapa(383, 285)
+        )
 
         # Sala boss
         self.salas["boss"] = Sala(
             "boss",
             tipo="boss",
             color_fondo=(45, 20, 20),
-            texturas=self.texturas
+            texturas=self.texturas,
+            generador_item=self.crear_item_unico_del_mapa
         )
         self.salas["boss"].jefe_guardado = self.crear_jefe_del_piso()
         self.salas["boss"].tiempo_entrada = 0
@@ -650,18 +850,49 @@ class Piso(Base):
                     Enemigo(x, y)
                 )
 
+        self.agregar_enemigos_extra_por_piso(sala)
+
         return sala
+
+    def agregar_enemigos_extra_por_piso(self, sala):
+        cantidad_extra = max(0, self.numero - 1)
+
+        for _ in range(cantidad_extra):
+            x, y = self.obtener_posicion_enemigo_extra(sala)
+
+            if random.choice(["normal", "disparador"]) == "disparador":
+                sala.agregar_enemigo(EnemigoDisparador(x, y))
+            else:
+                sala.agregar_enemigo(Enemigo(x, y))
+
+    def obtener_posicion_enemigo_extra(self, sala):
+        for _ in range(30):
+            x = random.randint(120, 640)
+            y = random.randint(120, 460)
+            rect = pygame.Rect(x, y, 40, 40)
+
+            choca_obstaculo = False
+
+            for obstaculo in sala.obstaculos:
+                if rect.colliderect(obstaculo.rect):
+                    choca_obstaculo = True
+                    break
+
+            if not choca_obstaculo:
+                return x, y
+
+        return 400, 300
 
     def cambiar_sala(self, nombre_sala):
         if nombre_sala in self.salas:
             self.sala_actual = self.salas[nombre_sala]
-            
+
             # Delay de spawn de enemigos con sonido
             if len(self.sala_actual.enemigos) > 0 and not self.sala_actual.timer_spawn_listo:
                 self.sala_actual.enemigos_guardados = self.sala_actual.enemigos
                 self.sala_actual.enemigos = []
                 self.sala_actual.tiempo_inicio_spawn = pygame.time.get_ticks()
-            
+
             # Sonido de cierre de puertas
             if self.sala_actual.tipo == "boss" and self.sala_actual.jefe_guardado is not None:
                 if self.sala_actual.tiempo_entrada == 0:
@@ -670,8 +901,8 @@ class Piso(Base):
 
         tiempo_actual = pygame.time.get_ticks()
         for enemigo in self.sala_actual.enemigos:
-            enemigo.tiempo_spawn = tiempo_actual 
-            enemigo.resetear_delay()           
+            enemigo.tiempo_spawn = tiempo_actual
+            enemigo.resetear_delay()
         print(
             "Sala actual:",
             self.sala_actual.nombre,
@@ -713,8 +944,8 @@ class Piso(Base):
                     AudioManager.play_sfx("spawn_enemigos")
                     self.sala_actual.agregar_enemigo(self.sala_actual.jefe_guardado)
                     self.sala_actual.jefe_guardado = None
-                
-                AudioManager.play_music("musica_jefe.mp3")    
+
+                AudioManager.play_music("musica_jefe.mp3")
 
             self.sala_actual.actualizar(pantalla, jugador, balas)
 
@@ -741,13 +972,14 @@ class Mapa(Base):
 
         self.pisos = {}
         self.piso_actual = None
+        self.items_usados = set()
 
         self.crear_mapa()
 
     def crear_mapa(self):
-        self.pisos[1] = Piso(1, self.texturas)
-        self.pisos[2] = Piso(2, self.texturas)
-        self.pisos[3] = Piso(3, self.texturas)
+        self.pisos[1] = Piso(1, self.texturas, self.items_usados)
+        self.pisos[2] = Piso(2, self.texturas, self.items_usados)
+        self.pisos[3] = Piso(3, self.texturas, self.items_usados)
 
         self.piso_actual = self.pisos[1]
 
