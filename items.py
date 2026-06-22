@@ -1,49 +1,5 @@
 from abc import ABC, abstractmethod
 
-def curar(self, cantidad):
-        self.__vida += cantidad
-
-        if self.__vida > self.__vida_max:
-            self.__vida = self.__vida_max
-
-def recibir_daño(self, cantidad):
-        self.__vida -= cantidad
-
-        if self.__vida <= 0:
-            self.__vida = 0
-            self.__vivo = False
-
-def aumentar_daño(self, cantidad):
-        self.__daño += cantidad
-
-def reducir_daño(self, cantidad):
-        self.__daño -= cantidad
-
-def aumentar_velocidad(self, cantidad):
-        self.__vel_movimiento += cantidad
-
-def reducir_velocidad(self, cantidad):
-        self.__vel_movimiento -= cantidad
-
-def curacion_completa(self):
-        self.__vida = self.__vida_max
-
-def añadir_contenedor(self, cantidad):
-        self.__vida_max += cantidad
-        
-def obtener_daño(self):
-    return self.__daño
-
-def registrar_muerte(self):
-    self.__enemigos_eliminados += 1
-
-def reducir_vida_maxima(self, cantidad):
-
-    self.__vida_max -= cantidad
-
-    if self.__vida > self.__vida_max:
-        self.__vida = self.__vida_max
-    
 class ItemPasivo(ABC):
 
     def __init__(self, nombre, descripcion):
