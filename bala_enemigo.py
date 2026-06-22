@@ -7,9 +7,7 @@ class BalaEnemigo(Bala):
 
     def __init__(self, x, y, dire_x, dire_y, daño=1):
         super().__init__(x, y, dire_x, dire_y, daño)
-        # velocidad propia
         self.velocidad = 5
-        # daño propio
         self.daño = daño
         Estadisticas.sumar_balas_enemigo_disparadas()
 
