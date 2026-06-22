@@ -7,6 +7,7 @@ Proyecto final de labo_2
 
   1) Versión Python 3.14.5
     * Descargable desde : https://www.python.org/downloads/release/python-3146/
+    
     * Una vez instalado, ejecutar una actualizacion del pip con : python -m pip install --upgrade pip
 
   2) Instalar librerías:
