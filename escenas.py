@@ -164,7 +164,7 @@ class EscenaJuego:
     def inicializar(self):
         AudioManager.stop_music()
         self.interfaz = Interfaz(self.manager.resolucion, self.manager.ui_manager, self.manager.ruta_fuente, self.manager.alto_hud)
-        AudioManager.play_music("musica_fondo.mp3", volumen=0.05)
+        AudioManager.play_music("musica_fondo.mp3", volumen=0.1)
 
     def sala_actual_limpia(self):
         if self.mapa.piso_actual and self.mapa.piso_actual.sala_actual:
@@ -414,7 +414,7 @@ class EscenaFinJuego:
 
         surf_puntos = fuente_fin.render(str(Estadisticas.puntaje_final), True, (color_texto))
         surf_puntos_rotada = pygame.transform.rotate(surf_puntos, -5)
-        self.manager.pantalla.blit(surf_puntos_rotada, (355, 455))
+        self.manager.pantalla.blit(surf_puntos_rotada, (355, 485))
 
         ancho_b, alto_b = 180, 40
         pos_mouse = pygame.mouse.get_pos()
@@ -444,8 +444,8 @@ class EscenaFinJuego:
         surf_btn1_rotado = pygame.transform.rotate(surf_btn1, -5)
         surf_btn2_rotado = pygame.transform.rotate(surf_btn2, -5)
 
-        pos_b1_x, pos_b1_y = 175, 489
-        pos_b2_x, pos_b2_y = 370, 507
+        pos_b1_x, pos_b1_y = 175, 547
+        pos_b2_x, pos_b2_y = 370, 567
 
         self.rect_btn_reiniciar = surf_btn1_rotado.get_rect(topleft=(pos_b1_x, pos_b1_y))
         self.rect_btn_salir = surf_btn2_rotado.get_rect(topleft=(pos_b2_x, pos_b2_y))

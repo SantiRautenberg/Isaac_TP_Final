@@ -564,10 +564,11 @@ class Sala(Base):
                     item.aplicar(jugador)
                     self.items.remove(item)
 
-        # CORRECCIÓN: Validamos que el jefe ya haya salido de la cola de espera antes de abrir la trampilla
         if self.tipo == "boss" and self.trampilla is not None:
             if self.jefe_guardado is None and len(self.enemigos) == 0:
                 if not self.trampilla.abierta:
+                    AudioManager.stop_music()
+
                     self.trampilla.abrir()
 
     def colision(self, rect_jugador):
