@@ -1,3 +1,5 @@
+from abc import ABC, abstractmethod
+
 def curar(self, cantidad):
         self.__vida += cantidad
 
@@ -42,12 +44,13 @@ def reducir_vida_maxima(self, cantidad):
     if self.__vida > self.__vida_max:
         self.__vida = self.__vida_max
     
-class ItemPasivo:
+class ItemPasivo(ABC):
 
     def __init__(self, nombre, descripcion):
         self.nombre = nombre
         self.descripcion = descripcion
 
+    @abstractmethod
     def aplicar(self, jugador):
         pass
 
@@ -74,9 +77,7 @@ class EncantoDelVampiro(ItemPasivo):
         self.enemigos_eliminados += 1
 
         if self.enemigos_eliminados == 13:
-
             jugador.curar(0.5)
-
             self.enemigos_eliminados = 0   
             
 # Hormonas de crecimiento
@@ -92,9 +93,7 @@ class HormonasDeCrecimiento(ItemPasivo):
         )
 
     def aplicar(self, jugador):
-
         jugador.aumentar_daño(1)
-
         jugador.aumentar_velocidad(2)
         
 # Cabeza de Cricket
@@ -110,10 +109,8 @@ class CabezaDeCricket(ItemPasivo):
         )
 
     def aplicar(self, jugador):
-
-        jugador.aumentar_daño(1)
-
-        jugador.aumentar_daño(jugador.obtener_daño() * 0.5)
+        cantidad = (jugador.get_daño() + 1) * 1.5
+        jugador.set_daño(cantidad)
         
 
 # Honguito
@@ -129,7 +126,6 @@ class Honguito(ItemPasivo):
         )
 
     def aplicar(self, jugador):
-
         jugador.aumentar_velocidad(2)
         
 # Alfajor hongueado
@@ -147,9 +143,7 @@ class AlfajorHongueado(ItemPasivo):
     def aplicar(self, jugador):
 
         jugador.recibir_daño(2)
-
         jugador.reducir_velocidad(1)
-
         jugador.aumentar_daño(3)
         
 # Sangre de Martir
@@ -183,7 +177,6 @@ class Corazon(ItemPasivo):
     def aplicar(self, jugador):
 
         jugador.añadir_contenedor(1)
-
         jugador.curacion_completa()
         
 # Desayuno
@@ -201,7 +194,6 @@ class Desayuno(ItemPasivo):
     def aplicar(self, jugador):
 
         jugador.añadir_contenedor(1)
-
         jugador.curar(1)
         
 # Almuerzo
@@ -219,7 +211,6 @@ class Almuerzo(ItemPasivo):
     def aplicar(self, jugador):
 
         jugador.añadir_contenedor(1)
-
         jugador.curar(1)
         
 # Cena
@@ -237,7 +228,6 @@ class Cena(ItemPasivo):
     def aplicar(self, jugador):
 
         jugador.añadir_contenedor(1)
-
         jugador.curar(1)
         
 # Carne podrida
@@ -255,7 +245,6 @@ class CarnePodrida(ItemPasivo):
     def aplicar(self, jugador):
 
         jugador.añadir_contenedor(1)
-
         jugador.curar(1)
         
 # Higado crudo
@@ -273,7 +262,6 @@ class HigadoCrudo(ItemPasivo):
     def aplicar(self, jugador):
 
         jugador.añadir_contenedor(2)
-
         jugador.curacion_completa()
         
 # Ozempic
@@ -291,7 +279,6 @@ class Ozempic(ItemPasivo):
     def aplicar(self, jugador):
 
         jugador.reducir_vida_maxima(2)
-
         jugador.aumentar_velocidad(4)
         
 # Cañon de vidrio
@@ -309,6 +296,5 @@ class CañonDeVidrio(ItemPasivo):
     def aplicar(self, jugador):
 
         jugador.reducir_vida_maxima(1)
-
         jugador.aumentar_daño(5)
         

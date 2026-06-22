@@ -4,12 +4,12 @@ import pygame
 import json
 import os
 
-# Decorador para guardar estadísticas en un archivo json.
+# Decorador para guardar datos de partidas en un archivo json.
 def registros(func):
     def wrapper(*args,**kwargs):
         print("Guardando estadísticas de la partida...")
 
-        dict_stats = func(*args,**kwargs)
+        datos= func(*args,**kwargs)
         archivo = "registro_partidas.json"
         clave = datetime.now().strftime("%Y-%m-%d_%H:%M:%S") 
         partidas = {} 
@@ -29,7 +29,7 @@ def registros(func):
                 print("Proceso de lectura finalizado.")
 
         # Guarda la partida actual
-        partidas[clave] = dict_stats
+        partidas[clave] = datos
 
         # Guarda el diccionario actualizado
         try:
@@ -47,12 +47,11 @@ def registros(func):
         # Se imprime al final de la lectura/escritura del archivo
         print("Proceso de guardado de estadísticas finalizado.")
 
-        return dict_stats
+        return datos
     return wrapper
 
+# Para testeo y guardar puntuaciones
 class Estadisticas:
-
-    nombre_jugador = "Isaac"   # Si hubiese otros personajes habría que obtenerlo con un getter
     
     # Estado inicial del jugador
     tiempo_inicio = None
@@ -73,7 +72,7 @@ class Estadisticas:
     total_daño_recibido = 0
     puntaje_final = 0
 
-    items_obtenidos = 0 # mejorar y/o poner directamente el inventario con un diccionario
+    items_obtenidos = 0
     detalle_items = {}
 
     balas_disparadas = 0
@@ -87,6 +86,7 @@ class Estadisticas:
     detalle_instanciados = {"Mosca": 0} # mejorar con los de cada sala
 
     enemigos_asesinados = 0
+    boss_derrotados = 0
     detalle_asesinados = {"Mosca": 0} # Acá van los nombres de los enemigos como clave y como valor arranca en 0
 
     #---------- Métodos de estado del jugador ----------
@@ -98,20 +98,26 @@ class Estadisticas:
         cls.vm_inicial = jugador.get_velMovimiento()
 
     @classmethod
-    def cargar_estado_final(cls, jugador, estado):              
+    def cargar_estado_final(cls, jugador):              
         cls.tiempo_fin = pygame.time.get_ticks()
         cls.duracion_partida = cls.calcular_duracion()
-        cls.resultado = estado # victoria, derrota o abandono
         cls.jugador_vivo = jugador.get_estado()
         cls.vida_final = jugador.get_vida()
         cls.daño_final = jugador.get_daño()
         cls.vm_final = jugador.get_velMovimiento()
+    
+    @classmethod
+    def obtener_resultado(cls):
+        if cls.jugador_vivo:
+            cls.resultado = "victoria"
+        else:
+            cls.resultado = "derrota"
 
     @classmethod
     def calcular_duracion(cls):
         duracion = round(((cls.tiempo_fin - cls.tiempo_inicio) / 1000),2) # segundos
-        duracion_td = str(timedelta(seconds=duracion)) # para formato h:m:s.ms
-        return duracion_td
+        cls.duracion_partida = str(timedelta(seconds=duracion)) # para formato h:m:s.ms
+        return cls.duracion_partida
     
     #---------- Métodos para los contadores ----------
     @classmethod
@@ -119,27 +125,35 @@ class Estadisticas:
         cls.total_daño_recibido += valor
     
     @classmethod
-    def calcular_puntaje(cls, jugador, estado):   # Se llama al finalizar la partida (victoria, derrota, esc)
-        cls.cargar_estado_final(jugador, estado)
-        puntaje_base = cls.vida_final + cls.balas_efectivas + (cls.enemigos_asesinados * 10) - cls.total_daño_recibido
-        # porcentajes de efectividad
-        efectividad_balas = cls.balas_efectivas / cls.balas_disparadas if cls.balas_disparadas>0 else 0
-        efectividad_asesinatos = cls.enemigos_asesinados / cls.enemigos_instanciados if cls.enemigos_instanciados>0 else 0
+    def calcular_puntaje(cls, jugador):   # Se llama al finalizar la partida (victoria/derrota)
+        cls.cargar_estado_final(jugador)
+
+        # ---------- CÁLCULO DE PUNTAJE ----------
+        puntaje_base = cls.vida_final + (cls.enemigos_asesinados*5 + cls.boss_derrotados*10) - cls.total_daño_recibido
+
+        # porcentaje de efectividad de balas
+        efectividad_balas = float(cls.balas_efectivas / cls.balas_disparadas) if cls.balas_disparadas>0 else 0
+
         # bonificación por precisión
         puntaje_base += efectividad_balas * 100  # porcentaje como puntos
-        # bonificación por efectividad en asesinatos
-        puntaje_base += efectividad_asesinatos * 100
-        # bonificación por ítem
-        if cls.items_obtenidos == 1:
-            puntaje_base *= 1.25
+        
+        # bonificación por ítems
+        if cls.items_obtenidos>0:
+            puntaje_base *= float(cls.items_obtenidos / 100)
+        
         # bonificación/penalización por resultado
         if cls.resultado == "victoria":
-            puntaje_final = puntaje_base * 2
-        elif cls.resultado == "derrota":
-            puntaje_final = puntaje_base
+            puntaje_base *= 1.2
         else:
-            puntaje_final = puntaje_base / 2
-        return max(0,int(puntaje_final)) # Asegura que el puntaje no sea negativo y sea entero
+            puntaje_base *= 0.8
+
+        cls.puntaje_final = max(0,int(puntaje_base)) # asegura que el puntaje no sea negativo y sea entero
+
+        # Llamo a los otros métodos finales
+        cls.resumen_partida_testeo()
+        cls.registro_partida()
+
+        return cls.puntaje_final
     
     @classmethod
     def sumar_enemigos_instanciados(cls,nombre):
@@ -149,6 +163,11 @@ class Estadisticas:
     @classmethod
     def sumar_enemigos_asesinados(cls,nombre):
         cls.enemigos_asesinados += 1
+        cls.detalle_asesinados[nombre] += 1
+    
+    @classmethod
+    def sumar_boss_derrotados(cls, nombre):
+        cls.boss_derrotados += 1
         cls.detalle_asesinados[nombre] += 1
 
     @classmethod
@@ -172,14 +191,11 @@ class Estadisticas:
     def sumar_balas_enemigo_impactadas(cls):
         cls.balas_enemigo_impactadas += 1
 
-    # ---------- Método para registro con decorador ----------
     @classmethod
-    @registros
-    def resumen_partida(cls):
+    def resumen_partida_testeo(cls):
         stats_fin = {
             "Estadísticas jugador":
             {   
-                "Nombre": cls.nombre_jugador,
                 "Jugador vivo": cls.jugador_vivo,
                 "Vida inicial": cls.vida_inicial,
                 "Vida final": cls.vida_final,
@@ -196,7 +212,7 @@ class Estadisticas:
             {
                 "Total enemigos": cls.enemigos_instanciados,
                 "Detalle de enemigos": cls.detalle_instanciados,
-                "Total enemigos asesinados": cls.enemigos_asesinados,
+                "Total enemigos asesinados": cls.enemigos_asesinados + cls.boss_derrotados,
                 "Detalles de asesinatos": cls.detalle_asesinados,
                 "Total balas disparadas": cls.balas_disparadas,
                 "Balas efectivas": cls.balas_efectivas,
@@ -207,5 +223,17 @@ class Estadisticas:
                 "Detalle de ítems": cls.detalle_items
             }
         }
+        print(stats_fin) #para testear
         return stats_fin
     
+    # ---------- Método para registro con decorador ----------
+    @classmethod
+    @registros
+    def registro_partida(cls):
+        datos_partida = { 
+            "Resultado": cls.resultado,
+            "Duración": cls.duracion_partida,
+            "Puntaje": cls.puntaje_final             
+        }
+        print(datos_partida)
+        return datos_partida
