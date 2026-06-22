@@ -549,6 +549,9 @@ class Sala(Base):
     def agregar_item(self, item):
         self.items.append(item)
 
+    def agregar_item(self, item):
+        self.items.append(item)
+
     def dibujar_fondo(self, pantalla):
         if self.tipo == "tutorial":
             if self.texturas is not None and self.texturas.sala_tutorial_fondo is not None:
