@@ -209,7 +209,7 @@ class EscenaJuego:
     def actualizar(self, time_delta, tiempo_actual, keys):
         if self.jugador.get_vida() <= 0:
             # calculamos el puntaje antes de cambiar de escena
-            Estadisticas.puntaje_final = Estadisticas.calcular_puntaje(self.jugador, "derrota")
+            Estadisticas.puntaje_final = Estadisticas.calcular_puntaje(self.jugador)
             self.manager.cambiar_escena(EscenaFinJuego(self.manager))
             return
 
@@ -233,6 +233,7 @@ class EscenaJuego:
             self.jugador.direccion_actual = "DERECHA"
             self.manager.audio_manager.reproducir_sfx("disparo")
             self.ultimo_disparo = tiempo_actual
+            Estadisticas.sumar_balas_disparadas()
 
         elif keys[pygame.K_LEFT] and tiempo_actual - self.ultimo_disparo > self.jugador.get_delay_disparo():
             bala = Bala(self.jugador.x, self.jugador.y + 25, -1, 0, daño=self.jugador.get_daño())
@@ -240,13 +241,15 @@ class EscenaJuego:
             self.jugador.direccion_actual = "IZQUIERDA"
             self.manager.audio_manager.reproducir_sfx("disparo")
             self.ultimo_disparo = tiempo_actual
-
+            Estadisticas.sumar_balas_disparadas()
+    
         elif keys[pygame.K_UP] and tiempo_actual - self.ultimo_disparo > self.jugador.get_delay_disparo():
             bala = Bala(self.jugador.x + 25, self.jugador.y, 0, -1, daño=self.jugador.get_daño())
             self.balas_jugador.append(bala)
             self.jugador.direccion_actual = "ARRIBA"
             self.manager.audio_manager.reproducir_sfx("disparo")
             self.ultimo_disparo = tiempo_actual
+            Estadisticas.sumar_balas_disparadas()
 
         elif keys[pygame.K_DOWN] and tiempo_actual - self.ultimo_disparo > self.jugador.get_delay_disparo():
             bala = Bala(self.jugador.x + 25, self.jugador.y + 50, 0, 1, daño=self.jugador.get_daño())
@@ -254,6 +257,7 @@ class EscenaJuego:
             self.jugador.direccion_actual = "ABAJO"
             self.manager.audio_manager.reproducir_sfx("disparo")
             self.ultimo_disparo = tiempo_actual
+            Estadisticas.sumar_balas_disparadas()
 
         self.jugador.actualizar(self.manager.pantalla, keys, self.mapa)
         self.mapa.actualizar(self.manager.pantalla, self.jugador, self.balas_enemigos)
@@ -283,7 +287,7 @@ class EscenaJuego:
 
                     # enemigo muerto
                     if enemigo.vida <= 0:
-                        Estadisticas.sumar_enemigos_asesinados("Mosca")
+                        Estadisticas.sumar_enemigos_asesinados()
                         sala_actual.enemigos.remove(enemigo)
 
                     break

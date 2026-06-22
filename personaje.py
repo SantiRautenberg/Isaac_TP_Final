@@ -150,22 +150,12 @@ class Jugador(Base):
         self.__daño += valor 
     
     # ------------ Métodos del personaje ------------
-    def curarse(self, corazon): 
-        self.curar(corazon)
-
-    def curar(self, cantidad):
-        self.__vida += cantidad
-        if self.__vida > self.__vida_max:
-            self.__vida = self.__vida_max
-
-    def recibirDaño(self, daño_recibido): 
-        self.recibir_daño(daño_recibido)
+    def recibirDaño(self,cantidad):
+        self.recibir_daño(cantidad)
 
     def recibir_daño(self, cantidad):
-        self.__vida -= cantidad
-        if self.__vida <= 0:
-            self.__vida = 0
-            self.__vivo = False
+        daño_recibido = self.__vida - cantidad
+        self.set_vida(daño_recibido)
         Estadisticas.sumar_daño_recibido(cantidad)
         AudioManager.play_sfx("daño_isaac")
 
@@ -173,29 +163,37 @@ class Jugador(Base):
         self.__vivo = False
 
     # funciones extras para interactuar con items.py
+    def curar(self, cantidad):
+        curacion = self.__vida + cantidad
+        self.set_vida(curacion)
+        self.set_vida_max(curacion)
+
+    def curacion_completa(self):
+        self.set_vida(self.__vida_max)
+    
     def añadir_contenedor(self, cantidad):
         self.set_vida_max(self.__vida_max + cantidad)
 
     def reducir_vida_maxima(self, cantidad):
         self.set_vida_max(self.__vida_max - cantidad)
 
-    def curacion_completa(self):
-        self.__vida = self.__vida_max
-
     def aumentar_daño(self, cantidad):
-        self.__daño += cantidad
+        aumento_daño = self.__daño + cantidad
+        self.set_daño(aumento_daño)
 
     def reducir_daño(self, cantidad):
-        self.__daño -= cantidad
-
-    def obtener_daño(self):
-        return self.__daño
+        reduccion_daño = self.__daño - cantidad
+        self.set_daño(reduccion_daño)
 
     def aumentar_velocidad(self, cantidad):
-        self.__vel_movimiento += cantidad
+        aumento_vm = self.__vel_movimiento + cantidad
+        self.set_velMovimiento(aumento_vm)
 
     def reducir_velocidad(self, cantidad):
-        self.__vel_movimiento -= cantidad
+        reduccion_vm = self.__vel_movimiento - cantidad
+        self.set_velMovimiento(reduccion_vm)
+
+    # Otras funciones del personaje
 
     def moverse(self, keys, mapa):
         self.esta_moviendose = False

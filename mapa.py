@@ -7,6 +7,7 @@ from base import Base
 from enemigo import Enemigo, EnemigoDisparador
 from jefes import JefePiso1, JefePiso2, JefePiso3
 from audio import AudioManager
+from estadistica import Estadisticas
 
 ANCHO_PANTALLA = 800
 ALTO_PANTALLA = 600
@@ -326,6 +327,7 @@ class Sala(Base):
 
     def agregar_enemigo(self, enemigo):
         self.enemigos.append(enemigo)
+        Estadisticas.sumar_enemigos_instanciados()
 
     def dibujar_fondo(self, pantalla):
         if self.tipo == "tutorial":
@@ -400,6 +402,7 @@ class Sala(Base):
 
                 if enemigo.vida <= 0:
                     self.enemigos.remove(enemigo)
+                    Estadisticas.sumar_enemigos_asesinados()
 
         # Si es sala boss y ya no quedan enemigos, aparece la trampilla abierta
         if self.tipo == "boss" and self.trampilla is not None:
@@ -407,7 +410,7 @@ class Sala(Base):
             if self.jefe_guardado is None and len(self.enemigos) == 0:
                 if not self.trampilla.abierta:
                     self.trampilla.abrir()
-                    
+                    Estadisticas.sumar_boss_derrotados()
                     AudioManager.stop_music()
 
     def al_entrar(self, tiempo_actual):
