@@ -452,6 +452,7 @@ class Sala(Base):
         self.conexiones = {}
 
         self.trampilla = None
+        self.item_boss_generado = False
 
         # Variables obligatorias de control declaradas en init
         self.enemigos_guardados = []
@@ -537,11 +538,11 @@ class Sala(Base):
         for enemigo in self.enemigos:
             enemigo.dibujar(pantalla)
 
-        for item in self.items:
-            item.dibujar(pantalla)
-
         if self.trampilla is not None:
             self.trampilla.dibujar(pantalla)
+
+        for item in self.items:
+            item.dibujar(pantalla)
 
     def actualizar(self, pantalla, jugador=None, lista_balas=None):
         for obstaculo in self.obstaculos:
@@ -549,9 +550,9 @@ class Sala(Base):
 
         if jugador is not None:
             for enemigo in self.enemigos[:]:
-                if isinstance(enemigo, EnemigoDisparador):
-                    enemigo.actualizar(jugador, lista_balas)
-                else:
+                try:
+                    enemigo.actualizar(jugador, lista_balas, self.enemigos, self.obstaculos)
+                except TypeError:
                     enemigo.actualizar(jugador, lista_balas, self.enemigos)
 
                 if enemigo.vida <= 0:
@@ -568,6 +569,14 @@ class Sala(Base):
             if self.jefe_guardado is None and len(self.enemigos) == 0:
                 if not self.trampilla.abierta:
                     AudioManager.stop_music()
+
+                    if not self.item_boss_generado:
+                        if self.generador_item is not None:
+                            self.agregar_item(self.generador_item(470, 285))
+                        else:
+                            self.agregar_item(crear_item_random(470, 285))
+
+                        self.item_boss_generado = True
 
                     self.trampilla.abrir()
 
@@ -855,7 +864,6 @@ class Piso(Base):
                 self.sala_actual.enemigos = []
                 self.sala_actual.tiempo_inicio_spawn = pygame.time.get_ticks()
 
-            # CORRECCIÓN: La música del jefe se dispara ACÁ exactamente una sola vez al entrar
             if self.sala_actual.tipo == "boss" and self.sala_actual.jefe_guardado is not None:
                 if self.sala_actual.tiempo_entrada == 0:
                     self.sala_actual.tiempo_entrada = pygame.time.get_ticks()
@@ -985,7 +993,7 @@ class Mapa(Base):
 
         return False
 
-    # CORRECCIÓN: Un solo método dibujar limpio y con el argumento correcto 'pantalla'
+
     def dibujar(self, pantalla):
         if self.piso_actual is not None:
             self.piso_actual.dibujar(pantalla)

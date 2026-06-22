@@ -5,10 +5,10 @@ import os
 from audio import AudioManager
 import escenas
 
-# Ajustes graficos
+# Ajustes graficos: 
 resolucion = (800, 720) 
 
-# Construimos la ventana del juego
+
 pygame.init()
 pygame.display.set_caption("Isaac TP Final")
 
@@ -31,12 +31,12 @@ if os.path.exists(ruta_fuente):
     if os.path.exists(ruta_themes):
         ui_manager.get_theme().load_theme(ruta_themes)
         
-# Cargamos el icono de la ventana como superficie
+
 if os.path.exists(ruta_icono):
     icono = pygame.image.load(ruta_icono).convert_alpha()
     pygame.display.set_icon(icono)
     
-# Inicializamos el gestor pasándole los parámetros compartidos
+
 scene_manager = escenas.SceneManager(pantalla, resolucion, audio_manager, ui_manager, ruta_themes, ruta_fuente)
 scene_manager.cambiar_escena(escenas.EscenaMenu(scene_manager))
 
