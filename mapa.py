@@ -4,9 +4,10 @@ import random
 import os
 
 from base import Base
-from enemigo import Enemigo, EnemigoDisparador
-from jefes import JefePiso1, JefePiso2, JefePiso3
-
+from enemigo import *
+from jefes import *
+from audio import AudioManager
+from items import *
 
 ANCHO_PANTALLA = 800
 ALTO_PANTALLA = 600
@@ -111,12 +112,10 @@ class TexturasMapa:
 
         self.sala_comun = self.cargar_imagen(ruta_sala_comun)
 
-
         self.puertas_sheet = self.cargar_imagen(os.path.join(ruta_mapa, "puertas_0.png"))
         self.roca = self.cargar_imagen(os.path.join(ruta_mapa, "roca_0.png"))
         self.trampilla_cerrada = self.cargar_imagen(os.path.join(ruta_mapa, "escotilla_cerrada.png"))
         self.trampilla_abierta = self.cargar_imagen(os.path.join(ruta_mapa, "escotilla_abierta.png"))
-
 
         self.sala_tutorial_fondo = None
         self.sala_comun_fondo = None
@@ -364,67 +363,15 @@ class ItemEnSala(Base):
 
             if os.path.exists(ruta):
                 imagen = pygame.image.load(ruta).convert_alpha()
+                # Corregido: cambiamos tolerance=70 por tolerancia=70
                 imagen = limpiar_sprite(imagen, (self.ancho, self.alto), tolerancia=70)
                 frames.append(imagen)
 
         return frames
 
-    def cambiar_daño(self, jugador, cantidad):
-        if hasattr(jugador, "set_daño"):
-            jugador.set_daño(cantidad)
-
-    def cambiar_velocidad(self, jugador, cantidad):
-        if hasattr(jugador, "set_velMovimiento"):
-            jugador.set_velMovimiento(cantidad)
-
-    def curar(self, jugador, cantidad):
-        if hasattr(jugador, "curarse"):
-            jugador.curarse(cantidad)
-        elif hasattr(jugador, "get_vida") and hasattr(jugador, "set_vida"):
-            jugador.set_vida(jugador.get_vida() + cantidad)
-
-    def hacer_daño(self, jugador, cantidad):
-        if hasattr(jugador, "recibirDaño"):
-            jugador.recibirDaño(cantidad)
-        elif hasattr(jugador, "recibir_daño"):
-            jugador.recibir_daño(cantidad)
-        elif hasattr(jugador, "get_vida") and hasattr(jugador, "set_vida"):
-            jugador.set_vida(jugador.get_vida() - cantidad)
-
     def aplicar(self, jugador):
-        item_id = getattr(self.item_pasivo, "id", 0)
-
-        if item_id == 1:      # Encanto del vampiro
-            self.cambiar_daño(jugador, 3)
-        elif item_id == 2:    # Hormonas de crecimiento
-            self.cambiar_daño(jugador, 1)
-            self.cambiar_velocidad(jugador, 2)
-        elif item_id == 3:    # Cabeza de Cricket
-            daño_actual = 1
-            if hasattr(jugador, "get_daño"):
-                daño_actual = jugador.get_daño()
-            self.cambiar_daño(jugador, 1)
-            self.cambiar_daño(jugador, daño_actual * 0.5)
-        elif item_id == 4:    # Honguito
-            self.cambiar_velocidad(jugador, 2)
-        elif item_id == 5:    # Alfajor hongueado
-            self.hacer_daño(jugador, 2)
-            self.cambiar_velocidad(jugador, -1)
-            self.cambiar_daño(jugador, 3)
-        elif item_id == 6:    # Sangre de Martir
-            self.cambiar_daño(jugador, 1)
-        elif item_id == 7:    # Corazon
-            self.curar(jugador, 10)
-        elif item_id in (8, 9, 11, 12):  # Desayuno, Almuerzo, Cena, Carne podrida
-            self.curar(jugador, 1)
-        elif item_id == 13:   # Higado crudo
-            self.curar(jugador, 10)
-        elif item_id == 14:   # Ozempic
-            self.hacer_daño(jugador, 2)
-            self.cambiar_velocidad(jugador, 4)
-        elif item_id == 15:   # Cañon de vidrio
-            self.hacer_daño(jugador, 1)
-            self.cambiar_daño(jugador, 5)
+        if self.item_pasivo and hasattr(self.item_pasivo, "aplicar"):
+            self.item_pasivo.aplicar(jugador)
 
     def dibujar(self, pantalla):
         if self.frames:
@@ -497,7 +444,7 @@ class Sala(Base):
         self.nombre = nombre
         self.tipo = tipo
         self.color_fondo = color_fondo
-        self.texturas = texturas
+        self.texturas = textTextures = texturas
         self.generador_item = generador_item
 
         self.obstaculos = []
@@ -506,6 +453,15 @@ class Sala(Base):
         self.conexiones = {}
 
         self.trampilla = None
+
+        # Variables obligatorias para el delay de enemigos comunes
+        self.enemigos_guardados = []
+        self.tiempo_inicio_spawn = 0
+        self.timer_spawn_listo = False
+
+        # Variables obligatorias para el jefe
+        self.jefe_guardado = None
+        self.tiempo_entrada = 0
 
         if self.tipo == "boss" and self.texturas is not None:
             self.trampilla = Trampilla(
@@ -523,6 +479,9 @@ class Sala(Base):
 
     def agregar_enemigo(self, enemigo):
         self.enemigos.append(enemigo)
+
+    def agregar_item(self, item):
+        self.items.append(item)
 
     def dibujar_fondo(self, pantalla):
         if self.tipo == "tutorial":
@@ -593,24 +552,26 @@ class Sala(Base):
 
         if jugador is not None:
             for enemigo in self.enemigos[:]:
-                try:
-                    enemigo.actualizar(jugador, lista_balas, self.enemigos, self.obstaculos)
-                except TypeError:
+                # CORRECCIÓN DE SIGNATURA: Evaluamos segun la instancia para evitar TypeErrors anidados
+                if isinstance(enemigo, EnemigoDisparador):
+                    enemigo.actualizar(jugador, lista_balas)
+                else:
                     enemigo.actualizar(jugador, lista_balas, self.enemigos)
 
                 if enemigo.vida <= 0:
-                    self.enemigos.remove(enemigo)
-                    Estadisticas.sumar_enemigos_asesinados()
+                    if enemigo in self.enemigos:
+                        self.enemigos.remove(enemigo)
+                        Estadisticas.sumar_enemigos_asesinados()
 
             for item in self.items[:]:
                 if hasattr(jugador, "rect") and item.rect.colliderect(jugador.rect):
                     item.aplicar(jugador)
                     self.items.remove(item)
 
-        # Si es sala boss y ya no quedan enemigos, aparece la trampilla abierta
         if self.tipo == "boss" and self.trampilla is not None:
-            if len(self.enemigos) == 0:
-                self.trampilla.abrir()
+            if self.jefe_guardado is None and len(self.enemigos) == 0:
+                if not self.trampilla.abierta:
+                    self.trampilla.abrir()
 
     def colision(self, rect_jugador):
         for obstaculo in self.obstaculos:
@@ -694,7 +655,6 @@ class Piso(Base):
         return crear_item_unico(x, y, self.items_usados)
 
     def crear_piso(self):
-        # Sala inicial del piso: sin instrucciones, obstaculos ni enemigos
         self.salas["comun_1"] = Sala(
             "comun_1",
             tipo="comun",
@@ -706,7 +666,6 @@ class Piso(Base):
         self.salas["comun_3"] = self.crear_sala_comun("comun_3")
         self.salas["comun_4"] = self.crear_sala_comun("comun_4")
 
-        # Sala tesoro sin enemigos ni obstáculos
         self.salas["tesoro"] = Sala(
             "tesoro",
             tipo="tesoro",
@@ -717,7 +676,6 @@ class Piso(Base):
             self.crear_item_unico_del_mapa(383, 285)
         )
 
-        # Sala boss
         self.salas["boss"] = Sala(
             "boss",
             tipo="boss",
@@ -887,22 +845,33 @@ class Piso(Base):
         if nombre_sala in self.salas:
             self.sala_actual = self.salas[nombre_sala]
 
+            if not hasattr(self.sala_actual, "timer_spawn_listo"): self.sala_actual.timer_spawn_listo = False
+            if not hasattr(self.sala_actual, "enemigos_guardados"): self.sala_actual.enemigos_guardados = []
+            if not hasattr(self.sala_actual, "tiempo_inicio_spawn"): self.sala_actual.tiempo_inicio_spawn = 0
+            if not hasattr(self.sala_actual, "jefe_guardado"): self.sala_actual.jefe_guardado = None
+            if not hasattr(self.sala_actual, "tiempo_entrada"): self.sala_actual.tiempo_entrada = 0
+
             # Delay de spawn de enemigos con sonido
             if len(self.sala_actual.enemigos) > 0 and not self.sala_actual.timer_spawn_listo:
                 self.sala_actual.enemigos_guardados = self.sala_actual.enemigos
                 self.sala_actual.enemigos = []
                 self.sala_actual.tiempo_inicio_spawn = pygame.time.get_ticks()
 
-            # Sonido de cierre de puertas
+            # Sonido de cierre de puertas y reproducción ÚNICA de música del jefe
             if self.sala_actual.tipo == "boss" and self.sala_actual.jefe_guardado is not None:
                 if self.sala_actual.tiempo_entrada == 0:
                     self.sala_actual.tiempo_entrada = pygame.time.get_ticks()
                     AudioManager.play_sfx("spawn_jefe")
+                    AudioManager.play_music("musica_jefe.mp3") # Movido acá para evitar bucle continuo
 
         tiempo_actual = pygame.time.get_ticks()
         for enemigo in self.sala_actual.enemigos:
             enemigo.tiempo_spawn = tiempo_actual
-            enemigo.resetear_delay()
+            try:
+                enemigo.resetear_delay()
+            except AttributeError:
+                pass
+
         print(
             "Sala actual:",
             self.sala_actual.nombre,
@@ -930,6 +899,12 @@ class Piso(Base):
 
     def actualizar(self, pantalla, jugador=None, balas=None):
         if self.sala_actual is not None:
+            if not hasattr(self.sala_actual, "enemigos_guardados"): self.sala_actual.enemigos_guardados = []
+            if not hasattr(self.sala_actual, "tiempo_inicio_spawn"): self.sala_actual.tiempo_inicio_spawn = 0
+            if not hasattr(self.sala_actual, "timer_spawn_listo"): self.sala_actual.timer_spawn_listo = False
+            if not hasattr(self.sala_actual, "jefe_guardado"): self.sala_actual.jefe_guardado = None
+            if not hasattr(self.sala_actual, "tiempo_entrada"): self.sala_actual.tiempo_entrada = 0
+
             # Los enemigos se spawnean al 0.5 segundo
             if len(self.sala_actual.enemigos_guardados) > 0:
                 if pygame.time.get_ticks() - self.sala_actual.tiempo_inicio_spawn >= 500:
@@ -944,8 +919,6 @@ class Piso(Base):
                     AudioManager.play_sfx("spawn_enemigos")
                     self.sala_actual.agregar_enemigo(self.sala_actual.jefe_guardado)
                     self.sala_actual.jefe_guardado = None
-
-                AudioManager.play_music("musica_jefe.mp3")
 
             self.sala_actual.actualizar(pantalla, jugador, balas)
 

@@ -33,7 +33,7 @@ class Enemigo(Base):
         self.cooldown_daño = 450
         self.ultimo_hit = 0
 
-        self.dimensiones = (90, 90)
+        self.dimensiones = (70, 70)
 
         ruta_raiz = os.path.dirname(os.path.abspath(__file__))
         ruta_carpeta = os.path.join(ruta_raiz, "imagenes", "enemigos", "perseguidor")

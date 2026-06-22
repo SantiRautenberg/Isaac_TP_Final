@@ -11,8 +11,8 @@ def registros(func):
 
         datos= func(*args,**kwargs)
         archivo = "registro_partidas.json"
-        clave = datetime.now().strftime("%Y-%m-%d_%H:%M:%S") 
-        partidas = {} 
+        clave = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
+        partidas = {}
 
         # Si existe el archivo reasigna a partidas el diccionario guardado
         if os.path.exists(archivo):
@@ -35,9 +35,9 @@ def registros(func):
         try:
             with open(archivo, "w", encoding="utf-8") as f:
                 json.dump(partidas, f, ensure_ascii=False, indent=4)
-        except (PermissionError, OSError, TypeError) as e: 
+        except (PermissionError, OSError, TypeError) as e:
             print(f"[ERROR EN ESCRITURA] {e}")
-        except Exception as e: 
+        except Exception as e:
             print(f"[ERROR INESPERADO EN ESCRITURA] {e}")
         else:
             print(f"Datos guardados con éxito en '{archivo}'.")
@@ -51,7 +51,7 @@ def registros(func):
     return wrapper
 
 class Estadisticas:
-    
+
     # Estado inicial del jugador
     tiempo_inicio = None
     vida_inicial = None
@@ -94,7 +94,7 @@ class Estadisticas:
         cls.vm_inicial = jugador.get_velMovimiento()
 
     @classmethod
-    def cargar_estado_final(cls, jugador):              
+    def cargar_estado_final(cls, jugador):
         cls.tiempo_fin = pygame.time.get_ticks()
         cls.duracion_partida = cls.calcular_duracion()
         cls.jugador_vivo = jugador.get_estado()
@@ -111,7 +111,7 @@ class Estadisticas:
         duracion = round(((cls.tiempo_fin - cls.tiempo_inicio) / 1000),2) # segundos
         cls.duracion_partida = str(timedelta(seconds=duracion)) # para formato h:m:s.ms
         return cls.duracion_partida
-    
+
     @classmethod
     def calcular_puntaje(cls, jugador):   # Se llama al finalizar la partida (victoria/derrota)
         cls.cargar_estado_final(jugador)
@@ -124,11 +124,11 @@ class Estadisticas:
 
         # bonificación por precisión
         puntaje_base += efectividad_balas * 100  # porcentaje como puntos
-        
+
         # bonificación por ítems
         if cls.items_obtenidos>0:
             puntaje_base *= float(cls.items_obtenidos / 100)
-        
+
         # bonificación/penalización por resultado
         if cls.resultado == "victoria":
             puntaje_base *= 1.2
@@ -142,16 +142,16 @@ class Estadisticas:
         cls.registro_partida()
 
         return cls.puntaje_final
-    
+
     #---------- Métodos para los contadores ----------
     @classmethod
     def sumar_daño_recibido(cls, valor):
         cls.total_daño_recibido += valor
-    
+
     @classmethod
     def sumar_enemigos_instanciados(cls):
         cls.enemigos_instanciados += 1
-        
+
     @classmethod
     def sumar_enemigos_asesinados(cls):
         cls.enemigos_asesinados += 1
@@ -169,8 +169,10 @@ class Estadisticas:
         cls.balas_efectivas += 1
 
     @classmethod
-    def sumar_items_obtenidos(cls,nombre):
+    def sumar_items_obtenidos(cls, nombre):
         cls.items_obtenidos += 1
+        if nombre not in cls.detalle_items:
+            cls.detalle_items[nombre] = 0
         cls.detalle_items[nombre] += 1
 
     @classmethod
@@ -185,7 +187,7 @@ class Estadisticas:
     def resumen_partida_testeo(cls):
         stats_fin = {
             "Estadísticas jugador":
-            {   
+            {
                 "Jugador vivo": cls.jugador_vivo,
                 "Vida inicial": cls.vida_inicial,
                 "Vida final": cls.vida_final,
@@ -214,15 +216,15 @@ class Estadisticas:
         }
         print(stats_fin) #para testear
         return stats_fin
-    
+
     # ---------- Método para registro con decorador ----------
     @classmethod
     @registros
     def registro_partida(cls):
-        datos_partida = { 
+        datos_partida = {
             "Resultado": cls.resultado,
             "Duración": cls.duracion_partida,
-            "Puntaje": cls.puntaje_final             
+            "Puntaje": cls.puntaje_final
         }
         print(datos_partida)
         return datos_partida

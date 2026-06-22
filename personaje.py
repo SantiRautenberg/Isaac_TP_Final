@@ -2,20 +2,20 @@
 from base import Base
 from estadistica import Estadisticas
 from audio import AudioManager
-import pygames
+import pygame
 import os
 
-inventario = {} 
+inventario = {}
 
 class Jugador(Base):
     def __init__(self, x, y):
         super().__init__(x, y)
-        self.nombre = "Isaac"   
+        self.nombre = "Isaac"
         self.__vida = 6
-        self.__vida_max = 6 
+        self.__vida_max = 6
         self.__vel_movimiento = 4
         self.__daño = 1
-        self.__delay_disparo = 500 
+        self.__delay_disparo = 500
         self.proyectil = None
         self.rango = 100
         self.__vivo = True
@@ -38,24 +38,24 @@ class Jugador(Base):
         self.animacion_horizontal = []
         self.animacion_arriba = []
         self.animacion_abajo = []
-        
+
         # Recorremos del 0 al 3 para cargar secuencialmente cada frame independiente de las 3 carpetas
         for i in range(4):
             # 1. Carga de animación horizontal (Caminata Base)
             ruta_frame_h = os.path.join(ruta_carpeta, "anim_base", f"{i}.png")
             img_h = pygame.image.load(ruta_frame_h).convert_alpha()
             self.animacion_horizontal.append(pygame.transform.scale(img_h, self.dimensiones))
-            
+
             # 2. Carga de animación hacia arriba
             ruta_frame_up = os.path.join(ruta_carpeta, "anim_arriba", f"{i}.png")
             img_up = pygame.image.load(ruta_frame_up).convert_alpha()
             self.animacion_arriba.append(pygame.transform.scale(img_up, self.dimensiones))
-            
+
             # 3. Carga de animación hacia abajo
             ruta_frame_down = os.path.join(ruta_carpeta, "anim_abajo", f"{i}.png")
             img_down = pygame.image.load(ruta_frame_down).convert_alpha()
             self.animacion_abajo.append(pygame.transform.scale(img_down, self.dimensiones))
-                
+
         # --- Variables de control para los estados y el tiempo ---
         self.direccion_actual = "ABAJO"
         self.esta_moviendose = False
@@ -85,26 +85,26 @@ class Jugador(Base):
             if tiempo_actual - self.tiempo_ultimo_frame > self.velocidad_animacion:
                 self.indice_animacion = (self.indice_animacion + 1) % len(animacion_activa)
                 self.tiempo_ultimo_frame = tiempo_actual
-            
-            # Se ejecuta en cada frame del juego 
+
+            # Se ejecuta en cada frame del juego
             self.sprite = animacion_activa[self.indice_animacion]
-                
+
             # La tira por defecto de movimiento mira a la izquierda, la invertimos para la derecha
             if self.direccion_actual == "DERECHA":
                 self.sprite = pygame.transform.flip(self.sprite, True, False)
         else:
             # Si se queda quieto, vuelve al sprite estático de su dirección
             self.sprite = self.sprites_direcciones[self.direccion_actual]
-            
+
         self.rect = pygame.Rect(self.x, self.y, self.dimensiones[0], self.dimensiones[1])
 
     # ------------ Encapsulamiento ------------
     def get_vida(self):
         return self.__vida
-    
+
     def get_vida_max(self):
         return self.__vida_max
-    
+
     def set_vida_max(self, valor):
         self.__vida_max = valor
         # controlamos topes de vida maxima por items
@@ -116,7 +116,7 @@ class Jugador(Base):
         # si la vida actual supera al nuevo maximo se recorta
         if self.__vida > self.__vida_max:
             self.__vida = self.__vida_max
-    
+
     def get_velMovimiento(self):
         return self.__vel_movimiento
 
@@ -125,15 +125,15 @@ class Jugador(Base):
 
     def get_delay_disparo(self):
         return self.__delay_disparo
-    
+
     def set_delay_disparo(self, valor):
         self.__delay_disparo = valor
         if self.__delay_disparo < 100:
             self.__delay_disparo = 100
-    
+
     def get_estado(self):
         return self.__vivo
-    
+
     def set_vida(self, valor):
         self.__vida = valor
         if self.__vida < 0:
@@ -142,13 +142,13 @@ class Jugador(Base):
             self.morir()
         if self.__vida >= self.__vida_max:
             self.__vida = self.__vida_max
-        
+
     def set_velMovimiento(self, valor):
-        self.__vel_movimiento += valor 
+        self.__vel_movimiento += valor
 
     def set_daño(self, valor):
-        self.__daño += valor 
-    
+        self.__daño += valor
+
     # ------------ Métodos del personaje ------------
     def recibirDaño(self,cantidad):
         self.recibir_daño(cantidad)
@@ -170,7 +170,7 @@ class Jugador(Base):
 
     def curacion_completa(self):
         self.set_vida(self.__vida_max)
-    
+
     def añadir_contenedor(self, cantidad):
         self.set_vida_max(self.__vida_max + cantidad)
 
@@ -213,7 +213,7 @@ class Jugador(Base):
 
         if dx != 0 or dy != 0:
             self.esta_moviendose = True
-       
+
             # Lógica de control de prioridad para determinar la dirección visual de Isaac
             if abs(dy) >= abs(dx) and dy != 0:
                 if dy < 0:
@@ -225,8 +225,8 @@ class Jugador(Base):
                     self.direccion_actual = "IZQUIERDA"
                 else:
                     self.direccion_actual = "DERECHA"
-                        
-        # Control de colisiones 
+
+        # Control de colisiones
         # Probar movimiento simulado en el eje X
         nuevo_rect = self.rect.copy()
         nuevo_rect.x += dx
