@@ -12,8 +12,6 @@ class Bala(Base):
         self.bala_vel = 12
         self.daño = daño # lo recibe del jugador
         self.rect = pygame.Rect(self.x, self.y, 10, 10)
-        Estadisticas.sumar_balas_disparadas()
-
 
     def trayectoria(self):
         self.x += self.dire_x * self.bala_vel

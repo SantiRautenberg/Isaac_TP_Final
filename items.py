@@ -1,10 +1,12 @@
 from abc import ABC, abstractmethod
-
+from estadistica import Estadisticas
+    
 class ItemPasivo(ABC):
 
     def __init__(self, nombre, descripcion):
         self.nombre = nombre
         self.descripcion = descripcion
+        Estadisticas.sumar_items_obtenidos(nombre)
 
     @abstractmethod
     def aplicar(self, jugador):
@@ -32,7 +34,7 @@ class EncantoDelVampiro(ItemPasivo):
 
         self.enemigos_eliminados += 1
 
-        if self.enemigos_eliminados == 13:
+        if self.enemigos_eliminados == 3:
             jugador.curar(0.5)
             self.enemigos_eliminados = 0   
             

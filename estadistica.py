@@ -7,7 +7,7 @@ import os
 # Decorador para guardar datos de partidas en un archivo json.
 def registros(func):
     def wrapper(*args,**kwargs):
-        print("Guardando estadísticas de la partida...")
+        print("Guardando datos de la partida...")
 
         datos= func(*args,**kwargs)
         archivo = "registro_partidas.json"
@@ -40,17 +40,16 @@ def registros(func):
         except Exception as e: 
             print(f"[ERROR INESPERADO EN ESCRITURA] {e}")
         else:
-            print(f"Estadísticas guardadas con éxito en '{archivo}'.")
+            print(f"Datos guardados con éxito en '{archivo}'.")
         finally:
             print("Proceso de escritura finalizado.")
 
         # Se imprime al final de la lectura/escritura del archivo
-        print("Proceso de guardado de estadísticas finalizado.")
+        print("Proceso de guardado de datos de partida finalizado.")
 
         return datos
     return wrapper
 
-# Para testeo y guardar puntuaciones
 class Estadisticas:
     
     # Estado inicial del jugador
@@ -78,16 +77,13 @@ class Estadisticas:
     balas_disparadas = 0
     balas_efectivas = 0
 
-    balas_enemigo_disparadas = 0
-    balas_enemigo_impactadas = 0
-
     # Contadores de enemigos
     enemigos_instanciados = 0
-    detalle_instanciados = {"Mosca": 0} # mejorar con los de cada sala
-
     enemigos_asesinados = 0
     boss_derrotados = 0
-    detalle_asesinados = {"Mosca": 0} # Acá van los nombres de los enemigos como clave y como valor arranca en 0
+
+    balas_enemigo_disparadas = 0
+    balas_enemigo_impactadas = 0
 
     #---------- Métodos de estado del jugador ----------
     @classmethod
@@ -105,24 +101,16 @@ class Estadisticas:
         cls.vida_final = jugador.get_vida()
         cls.daño_final = jugador.get_daño()
         cls.vm_final = jugador.get_velMovimiento()
-    
-    @classmethod
-    def obtener_resultado(cls):
-        if cls.jugador_vivo:
-            cls.resultado = "victoria"
-        else:
+        if cls.jugador_vivo==False:
             cls.resultado = "derrota"
+        else:
+            cls.resultado = "victoria"
 
     @classmethod
     def calcular_duracion(cls):
         duracion = round(((cls.tiempo_fin - cls.tiempo_inicio) / 1000),2) # segundos
         cls.duracion_partida = str(timedelta(seconds=duracion)) # para formato h:m:s.ms
         return cls.duracion_partida
-    
-    #---------- Métodos para los contadores ----------
-    @classmethod
-    def sumar_daño_recibido(cls, valor):
-        cls.total_daño_recibido += valor
     
     @classmethod
     def calcular_puntaje(cls, jugador):   # Se llama al finalizar la partida (victoria/derrota)
@@ -155,20 +143,22 @@ class Estadisticas:
 
         return cls.puntaje_final
     
+    #---------- Métodos para los contadores ----------
     @classmethod
-    def sumar_enemigos_instanciados(cls,nombre):
-        cls.enemigos_instanciados += 1
-        cls.detalle_instanciados[nombre] += 1
-        
-    @classmethod
-    def sumar_enemigos_asesinados(cls,nombre):
-        cls.enemigos_asesinados += 1
-        cls.detalle_asesinados[nombre] += 1
+    def sumar_daño_recibido(cls, valor):
+        cls.total_daño_recibido += valor
     
     @classmethod
-    def sumar_boss_derrotados(cls, nombre):
+    def sumar_enemigos_instanciados(cls):
+        cls.enemigos_instanciados += 1
+        
+    @classmethod
+    def sumar_enemigos_asesinados(cls):
+        cls.enemigos_asesinados += 1
+
+    @classmethod
+    def sumar_boss_derrotados(cls):
         cls.boss_derrotados += 1
-        cls.detalle_asesinados[nombre] += 1
 
     @classmethod
     def sumar_balas_disparadas(cls):
@@ -211,9 +201,8 @@ class Estadisticas:
             "Estadísticas asesinatos":
             {
                 "Total enemigos": cls.enemigos_instanciados,
-                "Detalle de enemigos": cls.detalle_instanciados,
                 "Total enemigos asesinados": cls.enemigos_asesinados + cls.boss_derrotados,
-                "Detalles de asesinatos": cls.detalle_asesinados,
+                "Boss derrotados": cls.boss_derrotados,
                 "Total balas disparadas": cls.balas_disparadas,
                 "Balas efectivas": cls.balas_efectivas,
             },

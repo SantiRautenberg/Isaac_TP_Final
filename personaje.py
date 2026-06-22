@@ -99,9 +99,6 @@ class Jugador(Base):
         self.rect = pygame.Rect(self.x, self.y, self.dimensiones[0], self.dimensiones[1])
 
     # ------------ Encapsulamiento ------------
-    def get_estado(self):
-        return self.__vivo
-    
     def get_vida(self):
         return self.__vida
     
@@ -134,6 +131,9 @@ class Jugador(Base):
         if self.__delay_disparo < 100:
             self.__delay_disparo = 100
     
+    def get_estado(self):
+        return self.__vivo
+    
     def set_vida(self, valor):
         self.__vida = valor
         if self.__vida < 0:
@@ -144,12 +144,15 @@ class Jugador(Base):
             self.__vida = self.__vida_max
         
     def set_velMovimiento(self, valor):
-        self.__vel_movimiento = valor 
+        self.__vel_movimiento += valor 
 
     def set_daño(self, valor):
-        self.__daño = valor 
+        self.__daño += valor 
     
     # ------------ Métodos del personaje ------------
+    def recibirDaño(self,cantidad):
+        self.recibir_daño(cantidad)
+
     def recibir_daño(self, cantidad):
         daño_recibido = self.__vida - cantidad
         self.set_vida(daño_recibido)
