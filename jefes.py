@@ -312,7 +312,7 @@ class JefePiso3(JefeBase):
     def __init__(self, x, y):
         super().__init__(x, y, velocidad=1, vida=80, daño=2, color=(40, 40, 190))
 
-        self.cooldown_disparo = 900
+        self.cooldown_disparo = 550
         self.ultimo_disparo = 0
         self.direccion_actual = "ABAJO"
         self.animaciones = {

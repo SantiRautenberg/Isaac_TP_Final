@@ -327,6 +327,7 @@ class EscenaJuego:
                     return
                 else:
                     self.mapa.pasar_siguiente_piso()
+                    AudioManager.play_music("musica_fondo.mp3", volumen=0.1)
                     self.jugador.x = 200
                     self.jugador.y = 200
                     self.jugador.rect.x = self.jugador.x

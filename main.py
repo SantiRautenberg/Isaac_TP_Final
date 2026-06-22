@@ -49,4 +49,4 @@ while Ejecutando:
     scene_manager.dibujar()
     pygame.display.flip()
 
-pygame.quit()
+pygame.quit()   

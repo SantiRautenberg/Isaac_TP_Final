@@ -957,13 +957,19 @@ class Mapa(Base):
 
     def crear_mapa(self):
         self.pisos[1] = Piso(1, self.texturas, self.items_usados)
-        self.pisos[2] = Piso(2, self.texturas, self.items_usados)
-        self.pisos[3] = Piso(3, self.texturas, self.items_usados)
-
         self.piso_actual = self.pisos[1]
 
+    def asegurar_piso_creado(self, numero_piso):
+        if numero_piso < 1 or numero_piso > 3:
+            return False
+
+        if numero_piso not in self.pisos:
+            self.pisos[numero_piso] = Piso(numero_piso, self.texturas, self.items_usados)
+
+        return True
+
     def cambiar_piso(self, numero_piso):
-        if numero_piso in self.pisos:
+        if self.asegurar_piso_creado(numero_piso):
             self.piso_actual = self.pisos[numero_piso]
             print("Piso actual:", numero_piso)
 
@@ -971,7 +977,7 @@ class Mapa(Base):
         numero_actual = self.obtener_numero_piso_actual()
         siguiente = numero_actual + 1
 
-        if siguiente in self.pisos:
+        if self.asegurar_piso_creado(siguiente):
             self.cambiar_piso(siguiente)
             return True
 
