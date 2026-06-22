@@ -10,10 +10,12 @@ inventario = {}
 class Jugador(Base):
     def __init__(self, x, y):
         super().__init__(x, y)
-        self.nombre = "Isaac"   # solo está Isaac, sino se pasa el nombre como argumento
+        self.nombre = "Isaac"   
         self.__vida = 6
+        self.__vida_max = 6 
         self.__vel_movimiento = 4
         self.__daño = 1
+        self.__delay_disparo = 500 
         self.proyectil = None
         self.rango = 100
         self.__vivo = True
@@ -22,7 +24,7 @@ class Jugador(Base):
         self.dimensiones = (60, 60)
 
         # Ruta
-        ruta_carpeta = os.path.join(os.path.dirname(__file__), "imagenes", "jugador") # Obtiene la ruta del directorio actual
+        ruta_carpeta = os.path.join(os.path.dirname(__file__), "imagenes", "jugador")
 
         # Los sprites para cada direccion se guardan por separado
         self.sprites_direcciones = {
@@ -36,7 +38,6 @@ class Jugador(Base):
         self.animacion_horizontal = []
         self.animacion_arriba = []
         self.animacion_abajo = []
-        
         
         # Recorremos del 0 al 3 para cargar secuencialmente cada frame independiente de las 3 carpetas
         for i in range(4):
@@ -65,6 +66,9 @@ class Jugador(Base):
         # sprite por defecto (Sprite de mirar hacia abajo)
         self.sprite = self.sprites_direcciones[self.direccion_actual]
         self.rect = pygame.Rect(self.x, self.y, self.dimensiones[0], self.dimensiones[1])
+
+        # cargamos el estado inicial de las estadisticas
+        Estadisticas.cargar_estado_inicial(self)
 
     def actualizarAnimacion(self):
         tiempo_actual = pygame.time.get_ticks()
@@ -95,48 +99,101 @@ class Jugador(Base):
         self.rect = pygame.Rect(self.x, self.y, self.dimensiones[0], self.dimensiones[1])
 
     # ------------ Encapsulamiento ------------
-    # Getters para stats
     def get_vida(self):
         return self.__vida
+    
+    def get_vida_max(self):
+        return self.__vida_max
+    
+    def set_vida_max(self, valor):
+        self.__vida_max = valor
+        # controlamos topes de vida maxima por items
+        if self.__vida_max > 10:
+            self.__vida_max = 10
+        if self.__vida_max <= 0:
+            self.__vida_max = 1
+
+        # si la vida actual supera al nuevo maximo se recorta
+        if self.__vida > self.__vida_max:
+            self.__vida = self.__vida_max
     
     def get_velMovimiento(self):
         return self.__vel_movimiento
 
     def get_daño(self):
         return self.__daño
+
+    def get_delay_disparo(self):
+        return self.__delay_disparo
+    
+    def set_delay_disparo(self, valor):
+        self.__delay_disparo = valor
+        if self.__delay_disparo < 100:
+            self.__delay_disparo = 100
     
     def get_estado(self):
         return self.__vivo
     
-    def set_vida(self,valor):
+    def set_vida(self, valor):
         self.__vida = valor
-        if self.__vida<0:
-            self.__vida=0
-        if self.__vida==0:
+        if self.__vida < 0:
+            self.__vida = 0
+        if self.__vida == 0:
             self.morir()
-        if self.__vida>=10:
-            self.__vida=10
-            # Acá no puede recoger más vidas (items)
+        if self.__vida >= self.__vida_max:
+            self.__vida = self.__vida_max
         
-    def set_velMovimiento(self,valor):
+    def set_velMovimiento(self, valor):
         self.__vel_movimiento += valor 
 
     def set_daño(self, valor):
         self.__daño += valor 
     
     # ------------ Métodos del personaje ------------
-    def curarse(self, corazon): 
-        sumar_vida = self.__vida + corazon
-        self.set_vida(sumar_vida)
+    def recibirDaño(self,cantidad):
+        self.recibir_daño(cantidad)
 
-    def recibirDaño(self, daño_recibido): 
-        restar_vida = self.__vida - daño_recibido
-        self.set_vida(restar_vida)
-        Estadisticas.sumar_daño_recibido(daño_recibido)
+    def recibir_daño(self, cantidad):
+        daño_recibido = self.__vida - cantidad
+        self.set_vida(daño_recibido)
+        Estadisticas.sumar_daño_recibido(cantidad)
         AudioManager.play_sfx("daño_isaac")
 
     def morir(self):
         self.__vivo = False
+
+    # funciones extras para interactuar con items.py
+    def curar(self, cantidad):
+        curacion = self.__vida + cantidad
+        self.set_vida(curacion)
+        self.set_vida_max(curacion)
+
+    def curacion_completa(self):
+        self.set_vida(self.__vida_max)
+    
+    def añadir_contenedor(self, cantidad):
+        self.set_vida_max(self.__vida_max + cantidad)
+
+    def reducir_vida_maxima(self, cantidad):
+        self.set_vida_max(self.__vida_max - cantidad)
+
+    def aumentar_daño(self, cantidad):
+        aumento_daño = self.__daño + cantidad
+        self.set_daño(aumento_daño)
+
+    def reducir_daño(self, cantidad):
+        reduccion_daño = self.__daño - cantidad
+        self.set_daño(reduccion_daño)
+
+    def aumentar_velocidad(self, cantidad):
+        aumento_vm = self.__vel_movimiento + cantidad
+        self.set_velMovimiento(aumento_vm)
+
+    def reducir_velocidad(self, cantidad):
+        reduccion_vm = self.__vel_movimiento - cantidad
+        self.set_velMovimiento(reduccion_vm)
+
+    # Otras funciones del personaje
 
     def moverse(self, keys, mapa):
         self.esta_moviendose = False

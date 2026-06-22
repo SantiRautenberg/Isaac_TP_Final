@@ -18,7 +18,7 @@ color_fondo = (20, 15, 15)
 color_interaccion_boton = (195, 189, 180)
 
 class SceneManager:
-    def __init__(self, pantalla, resolucion, audio_manager, ui_manager, ruta_themes, ruta_fuente, alto_hud=75):
+    def __init__(self, pantalla, resolucion, audio_manager, ui_manager, ruta_themes, ruta_fuente, alto_hud=120):
         self.pantalla = pantalla
         self.resolucion = resolucion
         self.audio_manager = audio_manager
@@ -151,7 +151,6 @@ class EscenaJuego:
         self.balas = []
         self.balas = []
         self.balas_enemigos = []
-        self.delay_disparo = 500
         self.ultimo_disparo = 0
 
         # Reseteamos el puntaje global al iniciar una nueva partida
@@ -201,10 +200,6 @@ class EscenaJuego:
     def actualizar(self, time_delta, tiempo_actual, keys):
         # Control de muerte del personaje
         if self.jugador.get_vida() <= 0:
-            AudioManager.play_sfx("muerte_isaac")
-            # calculamos el puntaje antes de cambiar de escena
-            Estadisticas.puntaje_final = Estadisticas.calcular_puntaje(self.jugador)
-            AudioManager.play_sfx("muerte_isaac")
             self.manager.cambiar_escena(EscenaFinJuego(self.manager))
             return
 
@@ -221,7 +216,8 @@ class EscenaJuego:
                 self.manager.cambiar_escena(EscenaMenu(self.manager))
                 return
 
-        if keys[pygame.K_RIGHT] and tiempo_actual - self.ultimo_disparo > self.delay_disparo:
+        # disparos ajustados al delay de disparo del jugador
+        if keys[pygame.K_RIGHT] and tiempo_actual - self.ultimo_disparo > self.jugador.get_delay_disparo():
             bala = Bala(self.jugador.x + 50, self.jugador.y + 25, 1, 0, daño=self.jugador.get_daño())
             self.balas.append(bala)
             self.balas.append(bala)
@@ -229,8 +225,9 @@ class EscenaJuego:
             AudioManager.play_sfx("disparo")
             AudioManager.play_sfx("disparo")
             self.ultimo_disparo = tiempo_actual
+            Estadisticas.sumar_balas_disparadas()
 
-        elif keys[pygame.K_LEFT] and tiempo_actual - self.ultimo_disparo > self.delay_disparo:
+        elif keys[pygame.K_LEFT] and tiempo_actual - self.ultimo_disparo > self.jugador.get_delay_disparo():
             bala = Bala(self.jugador.x, self.jugador.y + 25, -1, 0, daño=self.jugador.get_daño())
             self.balas.append(bala)
             self.balas.append(bala)
@@ -238,9 +235,8 @@ class EscenaJuego:
             AudioManager.play_sfx("disparo")
             AudioManager.play_sfx("disparo")
             self.ultimo_disparo = tiempo_actual
-            Estadisticas.sumar_balas_disparadas()
 
-        elif keys[pygame.K_UP] and tiempo_actual - self.ultimo_disparo > self.jugador.get_delay_disparo():
+        elif keys[pygame.K_UP] and tiempo_actual - self.ultimo_disparo > self.delay_disparo:
             bala = Bala(self.jugador.x + 25, self.jugador.y, 0, -1, daño=self.jugador.get_daño())
             self.balas.append(bala)
             self.balas.append(bala)
@@ -248,8 +244,9 @@ class EscenaJuego:
             AudioManager.play_sfx("disparo")
             AudioManager.play_sfx("disparo")
             self.ultimo_disparo = tiempo_actual
+            Estadisticas.sumar_balas_disparadas()
 
-        elif keys[pygame.K_DOWN] and tiempo_actual - self.ultimo_disparo > self.delay_disparo:
+        elif keys[pygame.K_DOWN] and tiempo_actual - self.ultimo_disparo > self.jugador.get_delay_disparo():
             bala = Bala(self.jugador.x + 25, self.jugador.y + 50, 0, 1, daño=self.jugador.get_daño())
             self.balas.append(bala)
             self.balas.append(bala)
@@ -257,6 +254,7 @@ class EscenaJuego:
             AudioManager.play_sfx("disparo")
             AudioManager.play_sfx("disparo")
             self.ultimo_disparo = tiempo_actual
+            Estadisticas.sumar_balas_disparadas()
 
         self.jugador.actualizar(self.manager.pantalla, keys, self.mapa)
         self.mapa.actualizar(self.manager.pantalla, self.jugador, self.balas_enemigos)
@@ -267,7 +265,38 @@ class EscenaJuego:
         for bala in self.balas[:]:
             bala.actualizar(self.manager.pantalla)
             rect_bala = pygame.Rect(bala.x, bala.y, 12, 12)
+            bala_eliminada = False
 
+            # ======================================
+            # COLISIÓN BALA VS ENEMIGOS
+            # ======================================
+            sala_actual = self.mapa.piso_actual.sala_actual
+
+            for enemigo in sala_actual.enemigos[:]:
+                if rect_bala.colliderect(enemigo.rect):
+
+                    enemigo.recibir_dano(bala.daño)
+                    Estadisticas.sumar_balas_efectivas()
+
+                    AudioManager.play_sfx("lagrima_impacto")
+
+                    if bala in self.balas_jugador:
+                        self.balas_jugador.remove(bala)
+                    bala_eliminada = True
+
+                    # enemigo muerto
+                    if enemigo.vida <= 0:
+                        Estadisticas.sumar_enemigos_asesinados("Mosca")
+                        sala_actual.enemigos.remove(enemigo)
+
+                    break
+
+            if bala_eliminada:
+                continue
+
+            # ======================================
+            # COLISIÓN CON PAREDES
+            # ======================================
             if self.mapa.colision(rect_bala):
                 self.balas.remove(bala)
                 self.balas.remove(bala)

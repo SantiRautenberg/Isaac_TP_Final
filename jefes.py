@@ -27,10 +27,10 @@ class JefeBase(Enemigo):
         self.color = color
 
     def dibujar_barra_vida(self, pantalla):
-        ancho_barra = 450
+        ancho_barra = 375
         alto_barra = 20
-        x = 250
-        y = 20
+        x = 200
+        y = 550
 
         porcentaje = max(0, self.vida / self.vida_maxima)
 
@@ -49,96 +49,10 @@ class JefeBase(Enemigo):
 
 class JefePiso1(JefeBase):
     def __init__(self, x, y):
-        super().__init__(x, y, velocidad=1.6, vida=30, daño=1, color=(180, 40, 40))
+        super().__init__(x, y, velocidad=1.4, vida=20, daño=2, color=(180, 40, 40))
 
-        self.dimensiones = (90, 90)
-        self.animaciones = {
-            "ARRIBA": self.cargar_animacion(["f_atras_1", "f_atras_2", "f_atras_3", "f_atras_4"]),
-            "ABAJO": self.cargar_animacion(["f_adelante_1", "f_adelante_2", "f_adelante_3", "f_adelante_4"]),
-            "DERECHA": self.cargar_animacion(["f_derecah_1", "f_derecah_2", "f_derecah_3", "f_derecah_4"]),
-            "IZQUIERDA": self.cargar_animacion(["f_izquierda_1", "f_izquierda_2", "f_izquierda_3", "f_izquierda_4"]),
-        }
-
-        self.direccion_actual = "ABAJO"
-        self.indice_animacion = 0
-        self.tiempo_ultimo_frame = 0
-        self.velocidad_animacion = 140
-        self.sprite = self.obtener_sprite_actual()
-
-    def obtener_carpeta_sprites(self):
-        ruta_raiz = os.path.dirname(os.path.abspath(__file__))
-        opciones = [
-            os.path.join(ruta_raiz, "imagenes", "enemigos", "jefes", "Piso_1"),
-            os.path.join(ruta_raiz, "imagenes", "enemigos", "jefes", "jefe_piso_1"),
-            os.path.join(ruta_raiz, "imagenes", "enemigos", "jefes"),
-            os.path.join(ruta_raiz, "imagenes", "jefes", "jefe_piso_1"),
-            os.path.join(ruta_raiz, "imagenes", "jefes"),
-        ]
-
-        for ruta in opciones:
-            if os.path.exists(ruta):
-                return ruta
-
-        return opciones[0]
-
-    def cargar_animacion(self, nombres):
-        carpeta = self.obtener_carpeta_sprites()
-        animacion = []
-
-        for nombre in nombres:
-            ruta = os.path.join(carpeta, f"{nombre}.png")
-
-            if os.path.exists(ruta):
-                imagen = cargar_sprite_recortado(ruta, self.dimensiones)
-                animacion.append(imagen)
-
-        return animacion
-
-    def obtener_sprite_actual(self):
-        animacion = self.animaciones.get(self.direccion_actual, [])
-
-        if not animacion:
-            return None
-
-        self.indice_animacion = self.indice_animacion % len(animacion)
-        return animacion[self.indice_animacion]
-
-    def actualizar_direccion(self, jugador):
-        dx = jugador.x - self.x
-        dy = jugador.y - self.y
-
-        if abs(dx) > abs(dy):
-            if dx > 0:
-                self.direccion_actual = "DERECHA"
-            else:
-                self.direccion_actual = "IZQUIERDA"
-        else:
-            if dy > 0:
-                self.direccion_actual = "ABAJO"
-            else:
-                self.direccion_actual = "ARRIBA"
-
-    def actualizar_animacion_jefe(self):
-        animacion = self.animaciones.get(self.direccion_actual, [])
-
-        if not animacion:
-            self.sprite = None
-            return
-
-        tiempo_actual = pygame.time.get_ticks()
-
-        if tiempo_actual - self.tiempo_ultimo_frame > self.velocidad_animacion:
-            self.indice_animacion = (self.indice_animacion + 1) % len(animacion)
-            self.tiempo_ultimo_frame = tiempo_actual
-
-        self.sprite = self.obtener_sprite_actual()
-
-    def actualizar(self, jugador, lista_balas=None, lista_enemigos=None, obstaculos=None):
-        if not self.puede_actuar():
-            return
-
-        self.actualizar_direccion(jugador)
-        self.seguir_jugador(jugador, obstaculos)
+    def actualizar(self, jugador, lista_balas=None, lista_enemigos=None):
+        self.seguir_jugador(jugador)
         self.colision_con_jugador(jugador)
         self.actualizar_animacion_jefe()
 
@@ -154,7 +68,7 @@ class JefePiso1(JefeBase):
 
 class JefePiso2(JefeBase):
     def __init__(self, x, y):
-        super().__init__(x, y, velocidad=2, vida=40, daño=1, color=(150, 60, 180))
+        super().__init__(x, y, velocidad=2, vida=25, daño=2, color=(150, 60, 180))
 
         self.direccion_x = 1
         self.direccion_y = 1
@@ -196,7 +110,7 @@ class JefePiso2(JefeBase):
 
 class JefePiso3(JefeBase):
     def __init__(self, x, y):
-        super().__init__(x, y, velocidad=1, vida=55, daño=1, color=(40, 40, 190))
+        super().__init__(x, y, velocidad=1, vida=32, daño=2, color=(40, 40, 190))
 
         self.cooldown_disparo = 900
         self.ultimo_disparo = 0

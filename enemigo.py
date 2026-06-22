@@ -16,10 +16,6 @@ def cargar_sprite_recortado(ruta, dimensiones):
 
 
 class Enemigo(Base):
-    def puede_actuar(self):
-        tiempo_actual = pygame.time.get_ticks()
-        return tiempo_actual - self.tiempo_spawn >= self.delay_entrada
-    
     def __init__(self, x, y, velocidad=2, vida=5, daño=1):
         super().__init__(x, y)
 
@@ -27,18 +23,17 @@ class Enemigo(Base):
         self.vida = vida
         self.daño = daño
 
-        # DELAY DE ENTRADA
-        self.delay_entrada = 2000
+        self.delay_entrada = 1000
         self.tiempo_spawn = pygame.time.get_ticks()
 
         self.ancho = 60
         self.alto = 60
         self.rect = pygame.Rect(self.x, self.y, self.ancho, self.alto)
 
-        self.cooldown_daño = 700
+        self.cooldown_daño = 450
         self.ultimo_hit = 0
 
-        self.dimensiones = (60, 60)
+        self.dimensiones = (90, 90)
 
         ruta_raiz = os.path.dirname(os.path.abspath(__file__))
         ruta_carpeta = os.path.join(ruta_raiz, "imagenes", "enemigos", "perseguidor")
@@ -69,6 +64,9 @@ class Enemigo(Base):
     def puede_actuar(self):
         tiempo_actual = pygame.time.get_ticks()
         return tiempo_actual - self.tiempo_spawn >= self.delay_entrada
+
+    def resetear_delay(self):
+        self.tiempo_spawn = pygame.time.get_ticks()
 
     def colisiona_obstaculos(self, obstaculos):
         if obstaculos is None:
@@ -132,7 +130,7 @@ class Enemigo(Base):
             if tiempo_actual - self.tiempo_ultimo_frame > self.velocidad_animacion:
                 self.indice_animacion = (self.indice_animacion + 1) % len(anim_activa)
                 self.tiempo_ultimo_frame = tiempo_actual
-            
+
             # ajustamos el indice por las dudas si cambia de animacion
             self.indice_animacion = self.indice_animacion % len(anim_activa)
             self.sprite = anim_activa[self.indice_animacion]
@@ -171,7 +169,7 @@ class Enemigo(Base):
                 self.hacer_daño_al_jugador(jugador)
 
     def recibir_dano(self, cantidad):
-       self.vida -= cantidad
+        self.vida -= cantidad
 
     def esta_muerto(self):
        return self.vida <= 0
@@ -198,12 +196,12 @@ class EnemigoDisparador(Enemigo):
     def __init__(self, x, y):
         super().__init__(x, y, velocidad=0, vida=3, daño=1)
 
-        self.cooldown_disparo = 1500
+        self.cooldown_disparo = 1750
         self.ultimo_disparo = 0
 
         ruta_raiz = os.path.dirname(os.path.abspath(__file__))
         ruta_carpeta_disp = os.path.join(ruta_raiz, "imagenes", "enemigos", "disparador")
-        
+
         if not os.path.exists(ruta_carpeta_disp):
             ruta_carpeta_disp = os.path.join(ruta_raiz, "imagenes", "enemigo", "disparador")
 
@@ -274,7 +272,7 @@ class EnemigoDisparador(Enemigo):
     def actualizar(self, jugador, lista_balas=None, lista_enemigos=None, obstaculos=None):
         # Espera antes de activarse
         if not self.puede_actuar():
-            return 
+            return
         self.colision_con_jugador(jugador)
         self.disparar(jugador, lista_balas)
         self.actualizar_animacion_disparador(jugador)

@@ -25,7 +25,10 @@ class AudioManager:
             "muerte_enemigo": self._cargar_sfx("muerte.wav"),
             "lagrima_impacto": self._cargar_sfx("lagrima_impacto.mp3"),
             "jugar_de_nuevo": self._cargar_sfx("jugar_de_nuevo.mp3"),
-            "iniciar_juego": self._cargar_sfx("iniciar_juego.wav")
+            "iniciar_juego": self._cargar_sfx("iniciar_juego.wav"),
+            "trampilla_abierta": self._cargar_sfx("trampilla_abierta.mp3"),
+            "spawn_jefe": self._cargar_sfx("boss_spawn.mp3"),
+            "spawn_enemigos": self._cargar_sfx("sala_spawn_enemigos.mp3")
         }
         
         # Ajustamos volúmenes iniciales para los efectos de sonido

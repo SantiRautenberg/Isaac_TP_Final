@@ -6,22 +6,6 @@ import os
 from base import Base
 from enemigo import Enemigo, EnemigoDisparador
 from jefes import JefePiso1, JefePiso2, JefePiso3
-from items import (
-    EncantoDelVampiro,
-    HormonasDeCrecimiento,
-    CabezaDeCricket,
-    Honguito,
-    AlfajorHongueado,
-    SangreDeMartir,
-    Corazon,
-    Desayuno,
-    Almuerzo,
-    Cena,
-    CarnePodrida,
-    HigadoCrudo,
-    Ozempic,
-    CañonDeVidrio,
-)
 
 
 ANCHO_PANTALLA = 800
@@ -55,10 +39,6 @@ if item_canon_vidrio is not None:
 # ============================================================
 
 def quitar_fondo_por_esquinas(superficie, tolerancia=55):
-    """
-    Limpia el fondo tomando como referencia los colores de las esquinas.
-    Usar solo en sprites chicos, no en fondos grandes.
-    """
     superficie = superficie.convert_alpha()
 
     ancho = superficie.get_width()
@@ -141,14 +121,12 @@ class TexturasMapa:
         self.sala_tutorial_fondo = None
         self.sala_comun_fondo = None
 
-
         self.puertas = {
             "ARRIBA": None,
             "ABAJO": None,
             "IZQUIERDA": None,
             "DERECHA": None
         }
-
 
         if self.roca is not None:
             self.roca = limpiar_sprite(self.roca, (TAM_ROCA, TAM_ROCA), tolerancia=60)
@@ -281,6 +259,8 @@ class Trampilla(Base):
 
         if self.imagen_actual is not None:
             self.rect = self.imagen_actual.get_rect(topleft=(self.x, self.y))
+
+        AudioManager.play_sfx("trampilla_abierta")
 
     def cerrar(self):
         self.visible = True
@@ -526,7 +506,6 @@ class Sala(Base):
         self.conexiones = {}
 
         self.trampilla = None
-        self.item_boss_generado = False
 
         if self.tipo == "boss" and self.texturas is not None:
             self.trampilla = Trampilla(
@@ -544,13 +523,6 @@ class Sala(Base):
 
     def agregar_enemigo(self, enemigo):
         self.enemigos.append(enemigo)
-        Estadisticas.sumar_enemigos_instanciados()
-
-    def agregar_item(self, item):
-        self.items.append(item)
-
-    def agregar_item(self, item):
-        self.items.append(item)
 
     def dibujar_fondo(self, pantalla):
         if self.tipo == "tutorial":
@@ -628,6 +600,7 @@ class Sala(Base):
 
                 if enemigo.vida <= 0:
                     self.enemigos.remove(enemigo)
+                    Estadisticas.sumar_enemigos_asesinados()
 
             for item in self.items[:]:
                 if hasattr(jugador, "rect") and item.rect.colliderect(jugador.rect):
@@ -637,13 +610,6 @@ class Sala(Base):
         # Si es sala boss y ya no quedan enemigos, aparece la trampilla abierta
         if self.tipo == "boss" and self.trampilla is not None:
             if len(self.enemigos) == 0:
-                if not self.item_boss_generado:
-                    if self.generador_item is not None:
-                        self.agregar_item(self.generador_item(470, 285))
-                    else:
-                        self.agregar_item(crear_item_random(470, 285))
-                    self.item_boss_generado = True
-
                 self.trampilla.abrir()
 
     def colision(self, rect_jugador):
@@ -759,10 +725,8 @@ class Piso(Base):
             texturas=self.texturas,
             generador_item=self.crear_item_unico_del_mapa
         )
-
-        self.salas["boss"].agregar_enemigo(
-            self.crear_jefe_del_piso()
-        )
+        self.salas["boss"].jefe_guardado = self.crear_jefe_del_piso()
+        self.salas["boss"].tiempo_entrada = 0
 
         self.generar_conexiones_aleatorias()
 
@@ -922,16 +886,32 @@ class Piso(Base):
     def cambiar_sala(self, nombre_sala):
         if nombre_sala in self.salas:
             self.sala_actual = self.salas[nombre_sala]
-            print(
-                "Sala actual:",
-                self.sala_actual.nombre,
-                "- tipo:",
-                self.sala_actual.tipo,
-                "- obstaculos:",
-                len(self.sala_actual.obstaculos),
-                "- enemigos:",
-                len(self.sala_actual.enemigos)
-            )
+
+            # Delay de spawn de enemigos con sonido
+            if len(self.sala_actual.enemigos) > 0 and not self.sala_actual.timer_spawn_listo:
+                self.sala_actual.enemigos_guardados = self.sala_actual.enemigos
+                self.sala_actual.enemigos = []
+                self.sala_actual.tiempo_inicio_spawn = pygame.time.get_ticks()
+
+            # Sonido de cierre de puertas
+            if self.sala_actual.tipo == "boss" and self.sala_actual.jefe_guardado is not None:
+                if self.sala_actual.tiempo_entrada == 0:
+                    self.sala_actual.tiempo_entrada = pygame.time.get_ticks()
+                    AudioManager.play_sfx("spawn_jefe")
+
+        tiempo_actual = pygame.time.get_ticks()
+        for enemigo in self.sala_actual.enemigos:
+            enemigo.tiempo_spawn = tiempo_actual
+            enemigo.resetear_delay()
+        print(
+            "Sala actual:",
+            self.sala_actual.nombre,
+            "- tipo:",
+            self.sala_actual.tipo,
+            "- obstaculos:",
+            len(self.sala_actual.obstaculos),
+            "- enemigos:",
+            len(self.sala_actual.enemigos))
 
     def cambiar_sala_por_direccion(self, direccion):
         if self.sala_actual is None:
@@ -950,18 +930,33 @@ class Piso(Base):
 
     def actualizar(self, pantalla, jugador=None, balas=None):
         if self.sala_actual is not None:
+            # Los enemigos se spawnean al 0.5 segundo
+            if len(self.sala_actual.enemigos_guardados) > 0:
+                if pygame.time.get_ticks() - self.sala_actual.tiempo_inicio_spawn >= 500:
+                    AudioManager.play_sfx("spawn_enemigos")
+                    self.sala_actual.enemigos = self.sala_actual.enemigos_guardados
+                    self.sala_actual.enemigos_guardados = []
+                    self.sala_actual.timer_spawn_listo = True
+
+            # Se spawnea el jefe 1 sec despues
+            if self.sala_actual.tipo == "boss" and self.sala_actual.jefe_guardado is not None:
+                if pygame.time.get_ticks() - self.sala_actual.tiempo_entrada >= 1000:
+                    AudioManager.play_sfx("spawn_enemigos")
+                    self.sala_actual.agregar_enemigo(self.sala_actual.jefe_guardado)
+                    self.sala_actual.jefe_guardado = None
+
+                AudioManager.play_music("musica_jefe.mp3")
+
             self.sala_actual.actualizar(pantalla, jugador, balas)
 
     def colision(self, rect_jugador):
         if self.sala_actual is not None:
             return self.sala_actual.colision(rect_jugador)
-
         return False
 
     def jugador_en_trampilla(self, rect_jugador):
         if self.sala_actual is not None:
             return self.sala_actual.jugador_en_trampilla(rect_jugador)
-
         return False
 
 

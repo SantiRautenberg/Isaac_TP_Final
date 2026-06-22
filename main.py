@@ -6,7 +6,7 @@ from audio import AudioManager
 import escenas
 
 # Ajustes graficos
-resolucion = (800, 675)
+resolucion = (800, 720) 
 
 # Construimos la ventana del juego
 pygame.init()
