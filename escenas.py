@@ -10,7 +10,7 @@ from interfaz import Interfaz
 from estadistica import Estadisticas
 from audio import AudioManager
 
-# Variables de colores 
+# Variables de colores
 color_boton = (236, 220, 220)
 color_boton_borde = (140, 124, 128)
 color_texto = (92, 44, 52)
@@ -48,13 +48,9 @@ class EscenaMenu:
         self.fondo_menu = None
         self.rect_btn_iniciar = pygame.Rect(0, 0, 0, 0)
         self.rect_btn_salir = pygame.Rect(0, 0, 0, 0)
-        
-        # Variables para el fade out
-        self.fading = False
-        self.fade_alpha = 0
 
     def inicializar(self):
-        self.manager.audio_manager.reproducir_musica("musica_menu.mp3", volumen=0.2)
+        AudioManager.play_music("musica_menu.mp3", volumen=0.2)
         ruta_img = os.path.join(os.path.dirname(__file__), "imagenes", "menu", "menu_inicial.png")
         if os.path.exists(ruta_img):
             self.fondo_menu = pygame.image.load(ruta_img).convert_alpha()
@@ -67,21 +63,12 @@ class EscenaMenu:
 
             if evento.type == pygame.MOUSEBUTTONDOWN and evento.button == 1:
                 pos_mouse = pygame.mouse.get_pos()
-                if self.rect_btn_iniciar.collidepoint(pos_mouse) and not self.fading:
-                    self.fading = True
-                    AudioManager.stop_music()
-                    AudioManager.play_sfx("iniciar_juego")
-                elif self.rect_btn_salir.collidepoint(pos_mouse) and not self.fading:
+                if self.rect_btn_iniciar.collidepoint(pos_mouse):
+                    self.manager.cambiar_escena(EscenaJuego(self.manager))
+                    return
+                elif self.rect_btn_salir.collidepoint(pos_mouse):
                     pygame.quit()
                     sys.exit()
-
-        # Agregue un fade out del menu al iniciar la partida
-        if self.fading:
-            self.fade_alpha += 300 * time_delta
-            if self.fade_alpha >= 255:
-                self.fade_alpha = 255
-                self.manager.cambiar_escena(EscenaJuego(self.manager))
-                return
 
         # Regulamos la iluminacion de los botones con el mouse
         pos_mouse = pygame.mouse.get_pos()
@@ -99,7 +86,7 @@ class EscenaMenu:
             fuente_menu = pygame.font.SysFont("sans", 16, bold=True)
             fuente_titulo = pygame.font.SysFont("sans", 24, bold=True)
 
-        # Cartel de presentacion rotado a -5° 
+        # Cartel de presentacion rotado a -5°
         surf_titulo = fuente_titulo.render("ISAAC ARGENTO v0.2", True, (color_texto))
         surf_titulo_rotada = pygame.transform.rotate(surf_titulo, -5)
         self.manager.pantalla.blit(surf_titulo_rotada, (295, 195))
@@ -138,8 +125,8 @@ class EscenaMenu:
         surf_btn2_rotado = pygame.transform.rotate(surf_btn2, -5)
 
         # ----------------- CALIBRACIÓN VERTICAL INDEPENDIENTE -----------------
-        pos_b1_x, pos_b1_y = 305, 330 
-        pos_b2_x, pos_b2_y = 313, 410  
+        pos_b1_x, pos_b1_y = 305, 330
+        pos_b2_x, pos_b2_y = 313, 410
 
         # hitbox del boton ajustadas
         self.rect_btn_iniciar = surf_btn1_rotado.get_rect(topleft=(pos_b1_x, pos_b1_y))
@@ -148,13 +135,6 @@ class EscenaMenu:
         self.manager.pantalla.blit(surf_btn1_rotado, (pos_b1_x, pos_b1_y))
         self.manager.pantalla.blit(surf_btn2_rotado, (pos_b2_x, pos_b2_y))
 
-        # Agregue un fade out del menu
-        if self.fade_alpha > 0:
-            surf_fade = pygame.Surface(self.manager.resolucion)
-            surf_fade.fill((0, 0, 0))
-            surf_fade.set_alpha(int(self.fade_alpha))
-            self.manager.pantalla.blit(surf_fade, (0, 0))
-
 
 # =====================[ESCENA: PARTIDA JUGABLE]======================================
 class EscenaJuego:
@@ -162,7 +142,7 @@ class EscenaJuego:
         self.manager = manager_escenas
         self.jugador = Jugador(200, 200)
         self.mapa = Mapa()
-        self.balas_jugador = []
+        self.balas = []
         self.balas_enemigos = []
         self.delay_disparo = 500
         self.ultimo_disparo = 0
@@ -170,45 +150,135 @@ class EscenaJuego:
         # Reseteamos el puntaje global al iniciar una nueva partida
         Estadisticas.puntaje_final = 0
 
+
     def inicializar(self):
+        AudioManager.stop_music() # Paramos la musica del menu cuando iniciamos la partida
         self.interfaz = Interfaz(self.manager.resolucion, self.manager.ui_manager, self.manager.ruta_fuente, self.manager.alto_hud)
-        AudioManager.play_music("musica_fondo.mp3", volumen=0.05)
-        
+        AudioManager.play_music("musica_fondo.mp3", volumen=0.2)
+
+    def sala_actual_limpia(self):
+        if self.mapa.piso_actual is None:
+            return True
+
+        sala_actual = self.mapa.piso_actual.sala_actual
+
+        if sala_actual is None:
+            return True
+
+        return len(sala_actual.enemigos) == 0
+
+    def revisar_colisiones_balas_enemigos(self):
+        if self.mapa.piso_actual is None:
+            return
+
+        sala_actual = self.mapa.piso_actual.sala_actual
+
+        if sala_actual is None:
+            return
+
+        for bala in self.balas[:]:
+            rect_bala = pygame.Rect(bala.x, bala.y, 12, 12)
+
+            for enemigo in sala_actual.enemigos[:]:
+                if not hasattr(enemigo, "rect"):
+                    continue
+
+                if rect_bala.colliderect(enemigo.rect):
+                    daño_bala = getattr(bala, "daño", getattr(bala, "daÃ±o", 1))
+                    enemigo.vida -= daño_bala
+
+                    if bala in self.balas:
+                        self.balas.remove(bala)
+
+                    AudioManager.play_sfx("lagrima_impacto")
+
+                    if enemigo.vida <= 0 and enemigo in sala_actual.enemigos:
+                        sala_actual.enemigos.remove(enemigo)
+
+                    break
+
+    def revisar_cambio_piso(self):
+        if not self.mapa.jugador_en_trampilla(self.jugador.rect):
+            return
+
+        cambio_piso = self.mapa.pasar_siguiente_piso()
+
+        if cambio_piso:
+            self.jugador.x = 370
+            self.jugador.y = 280
+            self.jugador.rect.x = self.jugador.x
+            self.jugador.rect.y = self.jugador.y
+            self.balas.clear()
+            self.balas_enemigos.clear()
+        else:
+            self.manager.cambiar_escena(EscenaFinJuego(self.manager))
+
+    def actualizar_balas_enemigas(self):
+        for bala in self.balas_enemigos[:]:
+            bala.actualizar(self.manager.pantalla)
+            rect_bala = pygame.Rect(bala.x, bala.y, 12, 12)
+
+            if hasattr(self.jugador, "rect") and rect_bala.colliderect(self.jugador.rect):
+                daño_bala = getattr(bala, "daño", getattr(bala, "daÃ±o", 1))
+
+                recibir_daño = getattr(self.jugador, "recibirDaño", None)
+
+                if recibir_daño is None:
+                    recibir_daño = getattr(self.jugador, "recibirDaÃ±o", None)
+
+                if recibir_daño is not None:
+                    recibir_daño(daño_bala)
+                elif hasattr(self.jugador, "set_vida") and hasattr(self.jugador, "get_vida"):
+                    self.jugador.set_vida(self.jugador.get_vida() - daño_bala)
+
+                self.balas_enemigos.remove(bala)
+                continue
+
+            if self.mapa.colision(rect_bala):
+                self.balas_enemigos.remove(bala)
+            elif bala.x < 0 or bala.x > 800 or bala.y < 0 or bala.y > 600:
+                self.balas_enemigos.remove(bala)
+
     def revisar_cambio_sala(self):
         ancho_canvas = 800
         alto_canvas = 600
         margen = 15
+        puede_salir = self.sala_actual_limpia()
 
         if self.jugador.rect.left <= 10:
-            if 225 <= self.jugador.rect.centery <= 375 and self.mapa.cambiar_sala_por_direccion("IZQUIERDA"):
+            if puede_salir and 225 <= self.jugador.rect.centery <= 375 and self.mapa.cambiar_sala_por_direccion("IZQUIERDA"):
                 self.jugador.x = ancho_canvas - self.jugador.dimensiones[0] - margen
             else:
                 self.jugador.x = 10
             self.jugador.rect.x = self.jugador.x
 
         elif self.jugador.rect.right >= ancho_canvas:
-            if 225 <= self.jugador.rect.centery <= 375 and self.mapa.cambiar_sala_por_direccion("DERECHA"):
+            if puede_salir and 225 <= self.jugador.rect.centery <= 375 and self.mapa.cambiar_sala_por_direccion("DERECHA"):
                 self.jugador.x = margen
             else:
                 self.jugador.x = ancho_canvas - self.jugador.dimensiones[0]
             self.jugador.rect.x = self.jugador.x
 
         elif self.jugador.rect.top <= 0:
-            if 325 <= self.jugador.rect.centerx <= 475 and self.mapa.cambiar_sala_por_direccion("ARRIBA"):
+            if puede_salir and 325 <= self.jugador.rect.centerx <= 475 and self.mapa.cambiar_sala_por_direccion("ARRIBA"):
                 self.jugador.y = alto_canvas - self.jugador.dimensiones[1] - margen
             else:
                 self.jugador.y = 0
             self.jugador.rect.y = self.jugador.y
 
         elif self.jugador.rect.bottom >= alto_canvas:
-            if 325 <= self.jugador.rect.centerx <= 475 and self.mapa.cambiar_sala_por_direccion("ABAJO"):
+            if puede_salir and 325 <= self.jugador.rect.centerx <= 475 and self.mapa.cambiar_sala_por_direccion("ABAJO"):
                 self.jugador.y = margen
             else:
                 self.jugador.y = alto_canvas - self.jugador.dimensiones[1]
             self.jugador.rect.y = self.jugador.y
 
     def actualizar(self, time_delta, tiempo_actual, keys):
+        # Control de muerte del personaje
         if self.jugador.get_vida() <= 0:
+            AudioManager.play_sfx("muerte_isaac")
+            # calculamos el puntaje antes de cambiar de escena
+            Estadisticas.puntaje_final = Estadisticas.calcular_puntaje(self.jugador)
             self.manager.cambiar_escena(EscenaFinJuego(self.manager))
             return
 
@@ -227,85 +297,50 @@ class EscenaJuego:
 
         if keys[pygame.K_RIGHT] and tiempo_actual - self.ultimo_disparo > self.delay_disparo:
             bala = Bala(self.jugador.x + 50, self.jugador.y + 25, 1, 0, daño=self.jugador.get_daño())
-            self.balas_jugador.append(bala)
+            self.balas.append(bala)
             self.jugador.direccion_actual = "DERECHA"
-            self.manager.audio_manager.reproducir_sfx("disparo")
+            AudioManager.play_sfx("disparo")
             self.ultimo_disparo = tiempo_actual
 
         elif keys[pygame.K_LEFT] and tiempo_actual - self.ultimo_disparo > self.delay_disparo:
             bala = Bala(self.jugador.x, self.jugador.y + 25, -1, 0, daño=self.jugador.get_daño())
-            self.balas_jugador.append(bala)
+            self.balas.append(bala)
             self.jugador.direccion_actual = "IZQUIERDA"
-            self.manager.audio_manager.reproducir_sfx("disparo")
+            AudioManager.play_sfx("disparo")
             self.ultimo_disparo = tiempo_actual
+            Estadisticas.sumar_balas_disparadas()
 
-        elif keys[pygame.K_UP] and tiempo_actual - self.ultimo_disparo > self.delay_disparo:
+        elif keys[pygame.K_UP] and tiempo_actual - self.ultimo_disparo > self.jugador.get_delay_disparo():
             bala = Bala(self.jugador.x + 25, self.jugador.y, 0, -1, daño=self.jugador.get_daño())
-            self.balas_jugador.append(bala)
+            self.balas.append(bala)
             self.jugador.direccion_actual = "ARRIBA"
-            self.manager.audio_manager.reproducir_sfx("disparo")
+            AudioManager.play_sfx("disparo")
             self.ultimo_disparo = tiempo_actual
 
         elif keys[pygame.K_DOWN] and tiempo_actual - self.ultimo_disparo > self.delay_disparo:
             bala = Bala(self.jugador.x + 25, self.jugador.y + 50, 0, 1, daño=self.jugador.get_daño())
-            self.balas_jugador.append(bala)
+            self.balas.append(bala)
             self.jugador.direccion_actual = "ABAJO"
-            self.manager.audio_manager.reproducir_sfx("disparo")
+            AudioManager.play_sfx("disparo")
             self.ultimo_disparo = tiempo_actual
 
         self.jugador.actualizar(self.manager.pantalla, keys, self.mapa)
         self.mapa.actualizar(self.manager.pantalla, self.jugador, self.balas_enemigos)
 
-        # Control de choques de las lagrimas
-        for bala in self.balas_jugador[:]:
+        # Control de choques de las lagrimas contra las paredes o rocas
+        for bala in self.balas[:]:
             bala.actualizar(self.manager.pantalla)
             rect_bala = pygame.Rect(bala.x, bala.y, 12, 12)
-            bala_eliminada = False
 
-            # ======================================
-            # COLISIÓN BALA VS ENEMIGOS
-            # ======================================
-            sala_actual = self.mapa.piso_actual.sala_actual
-
-            for enemigo in sala_actual.enemigos[:]:
-                if rect_bala.colliderect(enemigo.rect):
-
-                    enemigo.recibir_dano(bala.daño)
-                    Estadisticas.sumar_balas_efectivas()
-
-                    AudioManager.play_sfx("lagrima_impacto")
-
-                    if bala in self.balas_jugador:
-                        self.balas_jugador.remove(bala)
-                    bala_eliminada = True
-
-                    # enemigo muerto
-                    if enemigo.vida <= 0:
-                        Estadisticas.sumar_enemigos_asesinados("Mosca")
-                        sala_actual.enemigos.remove(enemigo)
-
-                    break
-
-            if bala_eliminada:
-                continue
-
-            # ======================================
-            # COLISIÓN CON PAREDES
-            # ======================================
             if self.mapa.colision(rect_bala):
-
-                if bala in self.balas_jugador:
-                    self.balas_jugador.remove(bala)
+                self.balas.remove(bala)
                 AudioManager.play_sfx("lagrima_impacto")
-
-            # ======================================
-            # FUERA DE PANTALLA
-            # ======================================
             elif bala.x < 0 or bala.x > 800 or bala.y < 0 or bala.y > 600:
+                self.balas.remove(bala)
 
-                if bala in self.balas_jugador:
-                    self.balas_jugador.remove(bala)
-
+        self.revisar_colisiones_balas_enemigos()
+        self.actualizar_balas_enemigas()
+        self.revisar_cambio_piso()
         self.revisar_cambio_sala()
 
 
@@ -314,9 +349,9 @@ class EscenaJuego:
             rect_bala = pygame.Rect(bala.x, bala.y, 12, 12)
             # choque contra jugador
             if rect_bala.colliderect(self.jugador.rect):
-               self.jugador.recibirDaño(bala.daño)
-               Estadisticas.sumar_balas_enemigo_impactadas()
-               self.balas_enemigos.remove(bala)
+                self.jugador.recibirDaño(bala.daño)
+                Estadisticas.sumar_balas_enemigo_impactadas()
+                self.balas_enemigos.remove(bala)
             # choque con paredes
             elif self.mapa.colision(rect_bala):
                 self.balas_enemigos.remove(bala)
@@ -330,7 +365,7 @@ class EscenaJuego:
         self.mapa.dibujar(subsuperficie_juego)
         self.jugador.dibujar(subsuperficie_juego)
 
-        for bala in self.balas_jugador:
+        for bala in self.balas:
             bala.dibujar(subsuperficie_juego)
 
         for bala in self.balas_enemigos:
@@ -346,10 +381,6 @@ class EscenaFinJuego:
         self.fondo_endgame = None
         self.rect_btn_reiniciar = pygame.Rect(0, 0, 0, 0)
         self.rect_btn_salir = pygame.Rect(0, 0, 0, 0)
-        
-        # Variables para el fade out
-        self.fading = False
-        self.fade_alpha = 0
 
     def inicializar(self):
         AudioManager.stop_music()
@@ -365,21 +396,12 @@ class EscenaFinJuego:
 
             if evento.type == pygame.MOUSEBUTTONDOWN and evento.button == 1:
                 pos_mouse = pygame.mouse.get_pos()
-                if self.rect_btn_reiniciar.collidepoint(pos_mouse) and not self.fading:
-                    self.fading = True
-                    AudioManager.stop_music()
-                    AudioManager.play_sfx("jugar_de_nuevo")
-                elif self.rect_btn_salir.collidepoint(pos_mouse) and not self.fading:
+                if self.rect_btn_reiniciar.collidepoint(pos_mouse):
+                    self.manager.cambiar_escena(EscenaJuego(self.manager))
+                    return
+                elif self.rect_btn_salir.collidepoint(pos_mouse):
                     pygame.quit()
                     sys.exit()
-
-        # Agregue un fade out del menu al reiniciar la partida
-        if self.fading:
-            self.fade_alpha += 300 * time_delta
-            if self.fade_alpha >= 255:
-                self.fade_alpha = 255
-                self.manager.cambiar_escena(EscenaJuego(self.manager))
-                return
 
     def dibujar(self):
         self.manager.pantalla.fill((20, 15, 15))
@@ -430,7 +452,7 @@ class EscenaFinJuego:
         surf_btn1_rotado = pygame.transform.rotate(surf_btn1, -5)
         surf_btn2_rotado = pygame.transform.rotate(surf_btn2, -5)
 
-        # Posicionamiento ajustado con la hoja 
+        # Posicionamiento ajustado con la hoja (Coordenadas absolutas de pantalla)
         pos_b1_x, pos_b1_y = 175, 489
         pos_b2_x, pos_b2_y = 370, 507
 
@@ -440,10 +462,3 @@ class EscenaFinJuego:
 
         self.manager.pantalla.blit(surf_btn1_rotado, (pos_b1_x, pos_b1_y))
         self.manager.pantalla.blit(surf_btn2_rotado, (pos_b2_x, pos_b2_y))
-
-        # Agregue un fade out del menu
-        if self.fade_alpha > 0:
-            surf_fade = pygame.Surface(self.manager.resolucion)
-            surf_fade.fill((0, 0, 0))
-            surf_fade.set_alpha(int(self.fade_alpha))
-            self.manager.pantalla.blit(surf_fade, (0, 0))
