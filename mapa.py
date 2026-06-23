@@ -29,10 +29,24 @@ ITEMS_DISPONIBLES = [
     Ozempic,
 ]
 
-item_canon_vidrio = globals().get("CañonDeVidrio") or globals().get("CaÃ±onDeVidrio")
+ITEM_SPRITE_DATOS = {
+    1: ("vampiro", "v"),
+    2: ("hormonas", "ho"),
+    3: ("cricket", "cr"),
+    4: ("hongo", "h"),
+    5: ("alfajor", "af"),
+    6: ("martir", "m"),
+    7: ("corazon", "c"),
+    8: ("desayuno", "d"),
+    9: ("almuerzo", "al"),
+    11: ("cena", "cen"),
+    12: ("carne podrida", "cp"),
+    13: ("higado", "hi"),
+    14: ("inyeccion", "y"),
+    15: ("postre", "t"),
+}
 
-if item_canon_vidrio is not None:
-    ITEMS_DISPONIBLES.append(item_canon_vidrio)
+ITEM_SPRITES_CACHE = {}
 
 
 # ============================================================
@@ -52,7 +66,7 @@ def quitar_fondo_por_esquinas(superficie, tolerancia=55):
         superficie.get_at((ancho - 1, alto - 1))[:3],
     ]
 
-    # Pygame tiene una forma de manipular los pixeles sin renderizarlos
+  
     pxarray = pygame.PixelArray(superficie)
 
     for x in range(ancho):
@@ -101,6 +115,73 @@ def limpiar_sprite(superficie, tamanio_final, tolerancia=55):
     superficie = pygame.transform.scale(superficie, tamanio_final)
 
     return superficie
+
+
+def limpiar_sprite_item(superficie, tamanio_final, tolerancia=72):
+    superficie = superficie.convert_alpha()
+    ancho = superficie.get_width()
+    alto = superficie.get_height()
+
+    colores_fondo = [
+        superficie.get_at((0, 0))[:3],
+        superficie.get_at((ancho - 1, 0))[:3],
+        superficie.get_at((0, alto - 1))[:3],
+        superficie.get_at((ancho - 1, alto - 1))[:3],
+        (255, 255, 255),
+    ]
+
+    for y in range(alto):
+        for x in range(ancho):
+            r, g, b, a = superficie.get_at((x, y))
+
+            if a == 0:
+                continue
+
+            es_blanco = r >= 235 and g >= 235 and b >= 235
+            es_fondo = any(
+                abs(r - fr) <= tolerancia and
+                abs(g - fg) <= tolerancia and
+                abs(b - fb) <= tolerancia
+                for fr, fg, fb in colores_fondo
+            )
+
+            if es_blanco or es_fondo:
+                superficie.set_at((x, y), (r, g, b, 0))
+
+    superficie = recortar_a_contenido(superficie)
+    return pygame.transform.smoothscale(superficie, tamanio_final)
+
+
+def cargar_frames_item(carpeta_item, prefijo, tamanio_final):
+    clave_cache = (carpeta_item, prefijo, tamanio_final)
+
+    if clave_cache in ITEM_SPRITES_CACHE:
+        return ITEM_SPRITES_CACHE[clave_cache]
+
+    ruta_items = os.path.join(
+        os.path.dirname(__file__),
+        "imagenes",
+        "items",
+        carpeta_item
+    )
+
+    frames = []
+
+    for i in range(1, 4):
+        ruta = os.path.join(ruta_items, f"{prefijo}{i}.png")
+
+        if os.path.exists(ruta):
+            imagen = pygame.image.load(ruta).convert_alpha()
+            imagen = limpiar_sprite_item(imagen, tamanio_final, tolerancia=72)
+            frames.append(imagen)
+
+    ITEM_SPRITES_CACHE[clave_cache] = frames
+    return frames
+
+
+def precargar_sprites_items(tamanio_final=(72, 72)):
+    for carpeta_item, prefijo in ITEM_SPRITE_DATOS.values():
+        cargar_frames_item(carpeta_item, prefijo, tamanio_final)
 
 
 # ============================================================
@@ -316,8 +397,8 @@ class ItemEnSala(Base):
         super().__init__(x, y)
 
         self.item_pasivo = item_pasivo
-        self.ancho = 48
-        self.alto = 48
+        self.ancho = 72
+        self.alto = 72
         self.rect = pygame.Rect(self.x, self.y, self.ancho, self.alto)
         self.frames = self.cargar_frames()
         self.indice_frame = 0
@@ -325,25 +406,8 @@ class ItemEnSala(Base):
         self.velocidad_animacion = 180
 
     def obtener_datos_sprite(self):
-        sprites = {
-            1: ("vampiro", "item_v"),
-            2: ("hormonas", "item_ho"),
-            3: ("cricket", "item_cr"),
-            4: ("hongo", "item_h"),
-            5: ("alfajor", "item_af"),
-            6: ("martir", "item_m"),
-            7: ("corazon", "item_c"),
-            8: ("desayuno", "item_d"),
-            9: ("almuerzo", "item_al"),
-            11: ("cena", "item_cen"),
-            12: ("carne podrida", "item_cp"),
-            13: ("higado", "item_hi"),
-            14: ("inyeccion", "item_y"),
-            15: ("postre", "item_t"),
-        }
-
         item_id = getattr(self.item_pasivo, "id", 0)
-        return sprites.get(item_id)
+        return ITEM_SPRITE_DATOS.get(item_id)
 
     def cargar_frames(self):
         datos_sprite = self.obtener_datos_sprite()
@@ -352,24 +416,7 @@ class ItemEnSala(Base):
             return []
 
         carpeta_item, prefijo = datos_sprite
-        ruta_items = os.path.join(
-            os.path.dirname(__file__),
-            "imagenes",
-            "items",
-            carpeta_item
-        )
-
-        frames = []
-
-        for i in range(1, 4):
-            ruta = os.path.join(ruta_items, f"{prefijo}{i}.png")
-
-            if os.path.exists(ruta):
-                imagen = pygame.image.load(ruta).convert_alpha()
-                imagen = limpiar_sprite(imagen, (self.ancho, self.alto), tolerancia=70)
-                frames.append(imagen)
-
-        return frames
+        return cargar_frames_item(carpeta_item, prefijo, (self.ancho, self.alto))
 
     def aplicar(self, jugador):
         if self.item_pasivo and hasattr(self.item_pasivo, "aplicar"):
@@ -616,7 +663,7 @@ presets_salas_comunes = [
         ],
         "enemigos": [
             (600, 150, "normal"),
-            (400, 350, "disparador"),
+            (400, 120, "disparador"),
         ]
     },
     {
@@ -637,7 +684,7 @@ presets_salas_comunes = [
         ],
         "enemigos": [
             (400, 350, "normal"),
-            (600, 180, "disparador"),
+            (600, 100, "disparador"),
         ]
     },
 ]
@@ -667,7 +714,7 @@ class Piso(Base):
     def crear_piso(self):
         self.salas["comun_1"] = Sala(
             "comun_1",
-            tipo="comun",
+            tipo="tutorial",
             color_fondo=(35, 30, 35),
             texturas=self.texturas
         )
@@ -955,6 +1002,7 @@ class Mapa(Base):
         self.piso_actual = None
         self.items_usados = set()
 
+        precargar_sprites_items()
         self.crear_mapa()
 
     def crear_mapa(self):
@@ -970,7 +1018,7 @@ class Mapa(Base):
     def pasar_siguiente_piso(self):
         numero_actual = self.obtener_numero_piso_actual()
         siguiente = numero_actual + 1
-        # Cargamos en memoria los pisos a medida que vamos pasando para mejor rendimiento
+        
         if siguiente <= 3:
             if siguiente not in self.pisos:
                 print(f"[Mapa Info] Generando Piso {siguiente} en caliente durante la transición...")

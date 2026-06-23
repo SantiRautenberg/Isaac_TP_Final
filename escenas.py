@@ -103,7 +103,7 @@ class EscenaMenu:
             fuente_menu = pygame.font.SysFont("sans", 16, bold=True)
             fuente_titulo = pygame.font.SysFont("sans", 24, bold=True)
 
-        surf_titulo = fuente_titulo.render("ISAAC ARGENTO v0.2", True, (color_texto))
+        surf_titulo = fuente_titulo.render("ISAAC ARGENTO v1", True, (color_texto))
         surf_titulo_rotada = pygame.transform.rotate(surf_titulo, -5)
         self.manager.pantalla.blit(surf_titulo_rotada, (295, 195))
 
