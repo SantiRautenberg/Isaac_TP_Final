@@ -5,14 +5,24 @@ import pygame
 import math
 import os
 
+SPRITES_ENEMIGOS_CACHE = {}
+
+
 def cargar_sprite_recortado(ruta, dimensiones):
+    clave_cache = (ruta, dimensiones)
+
+    if clave_cache in SPRITES_ENEMIGOS_CACHE:
+        return SPRITES_ENEMIGOS_CACHE[clave_cache]
+
     imagen = pygame.image.load(ruta).convert_alpha()
     rect_contenido = imagen.get_bounding_rect()
 
     if rect_contenido.width > 0 and rect_contenido.height > 0:
         imagen = imagen.subsurface(rect_contenido).copy()
 
-    return pygame.transform.scale(imagen, dimensiones)
+    imagen = pygame.transform.scale(imagen, dimensiones)
+    SPRITES_ENEMIGOS_CACHE[clave_cache] = imagen
+    return imagen
 
 
 class Enemigo(Base):

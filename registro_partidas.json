@@ -53,5 +53,20 @@
         "Resultado": "victoria",
         "Duración": "0:01:31.570000",
         "Puntaje": 364
+    },
+    "2026-06-23_15:23:25": {
+        "Resultado": "derrota",
+        "Duración": "0:01:15.990000",
+        "Puntaje": 95
+    },
+    "2026-06-23_15:30:36": {
+        "Resultado": "derrota",
+        "Duración": "0:02:08.740000",
+        "Puntaje": 92
+    },
+    "2026-06-23_15:31:31": {
+        "Resultado": "victoria",
+        "Duración": "0:00:51.320000",
+        "Puntaje": 403
     }
 }

@@ -47,6 +47,7 @@ ITEM_SPRITE_DATOS = {
 }
 
 ITEM_SPRITES_CACHE = {}
+ITEMS_PENDIENTES_PRECARGA = list(ITEM_SPRITE_DATOS.values())
 
 
 # ============================================================
@@ -119,6 +120,10 @@ def limpiar_sprite(superficie, tamanio_final, tolerancia=55):
 
 def limpiar_sprite_item(superficie, tamanio_final, tolerancia=72):
     superficie = superficie.convert_alpha()
+
+    if superficie.get_size() != tamanio_final:
+        superficie = pygame.transform.smoothscale(superficie, tamanio_final)
+
     ancho = superficie.get_width()
     alto = superficie.get_height()
 
@@ -182,6 +187,17 @@ def cargar_frames_item(carpeta_item, prefijo, tamanio_final):
 def precargar_sprites_items(tamanio_final=(72, 72)):
     for carpeta_item, prefijo in ITEM_SPRITE_DATOS.values():
         cargar_frames_item(carpeta_item, prefijo, tamanio_final)
+
+
+def precargar_sprites_items_paso(tamanio_final=(72, 72), cantidad=1):
+    for _ in range(cantidad):
+        if not ITEMS_PENDIENTES_PRECARGA:
+            return True
+
+        carpeta_item, prefijo = ITEMS_PENDIENTES_PRECARGA.pop(0)
+        cargar_frames_item(carpeta_item, prefijo, tamanio_final)
+
+    return len(ITEMS_PENDIENTES_PRECARGA) == 0
 
 
 # ============================================================
@@ -1002,7 +1018,6 @@ class Mapa(Base):
         self.piso_actual = None
         self.items_usados = set()
 
-        precargar_sprites_items()
         self.crear_mapa()
 
     def crear_mapa(self):
